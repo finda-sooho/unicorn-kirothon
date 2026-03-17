@@ -25,5 +25,5 @@ uv run pytest
 ## OpenAI 설정
 
 - 로컬 실행 시 `back/.env`에서 `OPENAI_API_KEY`, `OPENAI_MODEL`을 읽습니다.
-- 예제 파일은 `back/.env.example`입니다.
+- 예제 파일은 `back/.env.sample`입니다.
 - 키가 없거나 호출이 실패하면 규칙 기반 폴백 로직으로 계속 동작합니다.

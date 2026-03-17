@@ -6,6 +6,6 @@ __pycache__/
 .venv/
 .env
 .env.*
-!.env.example
+!.env.sample
 back/.env
 back/data/
