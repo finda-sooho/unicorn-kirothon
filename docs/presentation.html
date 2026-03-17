@@ -1,0 +1,697 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Meeting Alignment AI — Kiro Hackathon</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* === BRANDING TOKENS === */
+:root {
+  /* Base (Dark) */
+  --midnight: #0F1117;
+  --charcoal: #1A1D27;
+  --slate: #242836;
+  --iron: #2E3345;
+  /* Text */
+  --snow: #E8EAF0;
+  --mist: #9BA1B5;
+  --fog: #636B83;
+  /* Accent */
+  --iris: #6C7BF2;
+  --sage: #4ADE80;
+  --amber: #F59E0B;
+  --coral: #F87171;
+  --sky: #60A5FA;
+  /* Role BG */
+  --po-bg: #2D2640; --po-text: #B8A9E8;
+  --be-bg: #1E2D3D; --be-text: #7EB8D8;
+  --fe-bg: #1E3332; --fe-text: #6DC8B8;
+  --design-bg: #3D2A2A; --design-text: #E8A898;
+  --legal-bg: #2A2D35; --legal-text: #A8B0C8;
+  --qa-bg: #2A3325; --qa-text: #A8D88E;
+}
+
+* { margin:0; padding:0; box-sizing:border-box; }
+html, body { background: var(--midnight); color: var(--snow); font-family: 'Inter', 'Pretendard', sans-serif; }
+
+/* Slide system */
+.slide {
+  width: 100vw; height: 100vh;
+  display: none; flex-direction: column;
+  justify-content: center; align-items: center;
+  padding: 60px 80px;
+  position: relative;
+}
+.slide.active { display: flex; }
+
+/* Typography */
+h1 { font-size: 3rem; font-weight: 800; line-height: 1.2; letter-spacing: -0.02em; }
+h2 { font-size: 2rem; font-weight: 700; line-height: 1.3; margin-bottom: 24px; }
+h3 { font-size: 1.25rem; font-weight: 600; color: var(--mist); margin-bottom: 16px; }
+p, li { font-size: 1.125rem; line-height: 1.7; color: var(--snow); }
+.subtitle { font-size: 1.25rem; color: var(--mist); font-weight: 400; margin-top: 12px; }
+.mono { font-family: 'JetBrains Mono', monospace; }
+.mist { color: var(--mist); }
+.fog { color: var(--fog); }
+.iris { color: var(--iris); }
+.amber { color: var(--amber); }
+.sage { color: var(--sage); }
+.coral { color: var(--coral); }
+
+/* Layout helpers */
+.center { text-align: center; }
+.left { text-align: left; align-items: flex-start; }
+.full-w { width: 100%; max-width: 1100px; }
+.gap-16 { gap: 16px; }
+.gap-24 { gap: 24px; }
+.gap-32 { gap: 32px; }
+.flex-col { display: flex; flex-direction: column; }
+.flex-row { display: flex; flex-direction: row; }
+.flex-wrap { flex-wrap: wrap; }
+
+/* Cards */
+.card {
+  background: var(--charcoal);
+  border: 1px solid var(--iron);
+  border-radius: 12px;
+  padding: 24px;
+}
+.role-card {
+  border-radius: 12px;
+  padding: 20px 24px;
+  flex: 1;
+  min-width: 220px;
+}
+.role-card h4 { font-size: 1rem; font-weight: 600; margin-bottom: 8px; }
+.role-card p { font-size: 0.875rem; line-height: 1.6; }
+
+/* Quote block */
+.quote {
+  font-size: 1.5rem;
+  font-weight: 500;
+  font-style: italic;
+  color: var(--iris);
+  border-left: 4px solid var(--iris);
+  padding-left: 24px;
+  margin: 24px 0;
+}
+
+/* Flow diagram */
+.flow-step {
+  background: var(--charcoal);
+  border: 1px solid var(--iron);
+  border-radius: 10px;
+  padding: 16px 20px;
+  text-align: center;
+  min-width: 140px;
+}
+.flow-arrow { color: var(--iris); font-size: 1.5rem; display: flex; align-items: center; }
+
+/* Script mockup */
+.script-line {
+  padding: 12px 16px;
+  border-left: 3px solid var(--iron);
+  margin-bottom: 4px;
+  font-size: 0.95rem;
+}
+.script-line .time { color: var(--fog); font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; margin-right: 12px; }
+.annotation {
+  margin: 4px 0 12px 20px;
+  padding: 10px 16px;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+
+/* Table */
+table { width: 100%; border-collapse: collapse; }
+th, td { padding: 12px 16px; text-align: left; border-bottom: 1px solid var(--iron); }
+th { color: var(--mist); font-weight: 600; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.05em; }
+td { font-size: 0.95rem; }
+
+/* Progress bar */
+.progress-bar { height: 3px; background: var(--iron); position: fixed; top: 0; left: 0; width: 100%; z-index: 100; }
+.progress-fill { height: 100%; background: var(--iris); transition: width 0.3s ease; }
+
+/* Slide counter */
+.slide-counter {
+  position: fixed; bottom: 24px; right: 32px;
+  font-size: 0.8rem; color: var(--fog);
+  font-family: 'JetBrains Mono', monospace;
+  z-index: 100;
+}
+
+/* Badge */
+.badge {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+/* Chip */
+.chip {
+  display: inline-block;
+  border: 1px solid var(--iris);
+  color: var(--iris);
+  border-radius: 20px;
+  padding: 6px 14px;
+  font-size: 0.85rem;
+  margin: 4px;
+}
+
+/* Roadmap */
+.roadmap-col {
+  flex: 1;
+  padding: 24px;
+  border-radius: 12px;
+  min-width: 200px;
+}
+.roadmap-col h4 { font-size: 0.9rem; font-weight: 600; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.05em; }
+.roadmap-col li { font-size: 0.9rem; margin-bottom: 8px; list-style: none; padding-left: 0; }
+.roadmap-col li::before { content: "→ "; color: var(--iris); }
+
+/* Kiro badge */
+.kiro-badge {
+  position: fixed; bottom: 24px; left: 32px;
+  font-size: 0.75rem; color: var(--fog);
+  z-index: 100;
+}
+</style>
+</head>
+<body>
+
+<div class="progress-bar"><div class="progress-fill" id="progress"></div></div>
+<div class="slide-counter" id="counter"></div>
+<div class="kiro-badge">Built with Kiro 🤖</div>
+
+<!-- ========== SLIDE 1: TITLE ========== -->
+<div class="slide active center" style="gap: 20px;">
+  <div style="font-size: 0.85rem; color: var(--iris); font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 8px;">Kiro Hackathon 2025</div>
+  <h1 style="font-size: 3.5rem;">Meeting Alignment AI</h1>
+  <p class="subtitle" style="font-size: 1.4rem; max-width: 600px;">모두가 같은 페이지에 있는 회의</p>
+  <div style="margin-top: 40px; display: flex; gap: 12px;">
+    <span class="badge" style="background: var(--po-bg); color: var(--po-text);">PO</span>
+    <span class="badge" style="background: var(--be-bg); color: var(--be-text);">AI 개발자</span>
+    <span class="badge" style="background: var(--fe-bg); color: var(--fe-text);">백엔드 개발자</span>
+  </div>
+</div>
+
+<!-- ========== SLIDE 2: STORY ========== -->
+<div class="slide center" style="gap: 32px;">
+  <h2 style="font-size: 2.2rem; max-width: 800px; line-height: 1.4;">
+    오늘 이 해커톤에서<br>저희 셋이 주제 정하는 데만<br>
+    <span style="color: var(--iris); font-size: 3rem;">50분</span> 걸렸습니다.
+  </h2>
+  <p style="color: var(--mist); font-size: 1.2rem; max-width: 600px;">
+    PO, AI개발자, 백엔드 개발자 — 배경이 다르니까요.<br>
+    이 문제를 풀고 싶었습니다.
+  </p>
+  <div class="quote" style="margin-top: 24px; max-width: 500px;">
+    "회의에서 한 번에 얼라인 된 적 있어요?"
+  </div>
+</div>
+
+<!-- ========== SLIDE 3: PROBLEM ========== -->
+<div class="slide left" style="gap: 32px;">
+  <div class="full-w">
+    <h3 style="color: var(--coral); font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.1em;">Problem</h3>
+    <h2>회의에서 사람마다 배경지식이 다르다</h2>
+    <div class="flex-row gap-24" style="margin-top: 16px; flex-wrap: wrap;">
+      <div class="card flex-col gap-16" style="flex: 1; min-width: 300px;">
+        <p style="color: var(--mist); font-size: 0.85rem; font-weight: 600;">패턴 A: 설명 루프</p>
+        <div style="font-family: 'JetBrains Mono', monospace; font-size: 0.85rem; line-height: 2; color: var(--snow);">
+          한 명이 설명<br>
+          <span style="color: var(--fog);">→</span> "그게 뭔데?"<br>
+          <span style="color: var(--fog);">→</span> 다시 설명<br>
+          <span style="color: var(--fog);">→</span> 다른 사람은 이미 알아서 지루<br>
+          <span style="color: var(--coral);">→ 시간 다 써서 결론 못 냄</span>
+        </div>
+      </div>
+      <div class="card flex-col gap-16" style="flex: 1; min-width: 300px;">
+        <p style="color: var(--mist); font-size: 0.85rem; font-weight: 600;">패턴 B: 침묵 통과</p>
+        <div style="font-family: 'JetBrains Mono', monospace; font-size: 0.85rem; line-height: 2; color: var(--snow);">
+          이해 못 한 사람이 그냥 넘어감<br>
+          <span style="color: var(--fog);">→</span> 나중에 엇나감<br>
+          <span style="color: var(--fog);">→</span> 재회의<br>
+          <span style="color: var(--coral);">→ 얼라인에 시간 2~3배</span>
+        </div>
+      </div>
+    </div>
+    <p style="margin-top: 24px; color: var(--mist); font-size: 1rem;">
+      직장인 전원이 겪는 문제. 특히 <span style="color: var(--snow); font-weight: 600;">PO · 개발자 · 디자이너 · 법무</span> 등 크로스펑셔널 미팅.
+    </p>
+  </div>
+</div>
+
+<!-- ========== SLIDE 4: SOLUTION ========== -->
+<div class="slide left" style="gap: 32px;">
+  <div class="full-w">
+    <h3 style="color: var(--sage); font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.1em;">Solution</h3>
+    <h2>팀 인텔리전스 레이어</h2>
+    <p style="color: var(--mist); font-size: 1.1rem; max-width: 700px; margin-bottom: 32px;">
+      회의 주제를 넣으면, 참석자 역할별 맞춤 브리핑 + 실시간 용어/맥락 설명이 나온다
+    </p>
+    <div class="flex-row gap-24" style="flex-wrap: wrap;">
+      <div class="card center" style="flex: 1; min-width: 200px; border-top: 3px solid var(--iris);">
+        <div style="font-size: 2rem; margin-bottom: 8px;">📋</div>
+        <p style="font-weight: 600; margin-bottom: 4px;">역할별 브리핑</p>
+        <p style="font-size: 0.85rem; color: var(--mist);">미팅 전, 내 관점에 맞는<br>사전 브리핑 자동 생성</p>
+      </div>
+      <div class="card center" style="flex: 1; min-width: 200px; border-top: 3px solid var(--iris);">
+        <div style="font-size: 2rem; margin-bottom: 8px;">💬</div>
+        <p style="font-weight: 600; margin-bottom: 4px;">실시간 채팅 Q&A</p>
+        <p style="font-size: 0.85rem; color: var(--mist);">모르는 용어? 채팅으로 물으면<br>역할 맞춤형 답변 즉시</p>
+      </div>
+      <div class="card center" style="flex: 1; min-width: 200px; border-top: 3px solid var(--iris);">
+        <div style="font-size: 2rem; margin-bottom: 8px;">🎙️</div>
+        <p style="font-weight: 600; margin-bottom: 4px;">실시간 보조설명</p>
+        <p style="font-size: 0.85rem; color: var(--mist);">녹음 → 스크립트 → 개인별<br>맞춤 보조설명 + 추천 질문</p>
+      </div>
+    </div>
+    <div style="margin-top: 24px;">
+      <div class="flex-row gap-16" style="align-items: center; flex-wrap: wrap;">
+        <span style="color: var(--fog); font-size: 0.85rem;">핵심 원칙:</span>
+        <span class="chip">Aligned, not uniform</span>
+        <span class="chip">Calm intelligence</span>
+        <span class="chip">Contextual flow</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ========== SLIDE 5: HOW IT WORKS ========== -->
+<div class="slide left" style="gap: 32px;">
+  <div class="full-w">
+    <h3 style="color: var(--sky); font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.1em;">How It Works</h3>
+    <h2>사용 흐름</h2>
+    <div class="flex-row gap-16" style="align-items: center; justify-content: center; flex-wrap: wrap; margin-top: 16px;">
+      <div class="flow-step">
+        <div style="font-size: 1.5rem; margin-bottom: 6px;">1️⃣</div>
+        <p style="font-weight: 600; font-size: 0.9rem;">미팅 생성</p>
+        <p style="font-size: 0.75rem; color: var(--mist); margin-top: 4px;">주제 · 안건 · 배경자료<br>참석자 역할 입력</p>
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step">
+        <div style="font-size: 1.5rem; margin-bottom: 6px;">2️⃣</div>
+        <p style="font-weight: 600; font-size: 0.9rem;">브리핑 생성</p>
+        <p style="font-size: 0.75rem; color: var(--mist); margin-top: 4px;">AI가 역할별<br>맞춤 브리핑 자동 생성</p>
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step">
+        <div style="font-size: 1.5rem; margin-bottom: 6px;">3️⃣</div>
+        <p style="font-weight: 600; font-size: 0.9rem;">미팅 세션</p>
+        <p style="font-size: 0.75rem; color: var(--mist); margin-top: 4px;">실시간 스크립트<br>채팅 Q&A · 보조설명</p>
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step">
+        <div style="font-size: 1.5rem; margin-bottom: 6px;">4️⃣</div>
+        <p style="font-weight: 600; font-size: 0.9rem;">AI 보조</p>
+        <p style="font-size: 0.75rem; color: var(--mist); margin-top: 4px;">추천 질문<br>궤도 이탈 방지</p>
+      </div>
+    </div>
+    <div class="card" style="margin-top: 32px; padding: 20px 24px;">
+      <p style="font-size: 0.9rem; color: var(--mist);">
+        <span style="color: var(--iris); font-weight: 600;">핵심:</span>
+        참석자 각자가 본인 디바이스에서 시스템을 열어두고, 본인의 역할과 지식 수준에 맞는 보조를 받는 형태
+      </p>
+    </div>
+  </div>
+</div>
+
+<!-- ========== SLIDE 6: DEMO — BRIEFING ========== -->
+<div class="slide left" style="gap: 24px;">
+  <div class="full-w">
+    <h3 style="color: var(--iris); font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.1em;">Demo — 역할별 브리핑</h3>
+    <h2>같은 주제, 완전히 다른 브리핑</h2>
+    <p style="color: var(--mist); font-size: 0.95rem; margin-bottom: 20px;">
+      미팅 주제: <span style="color: var(--snow); font-weight: 600;">"개인정보 마스킹 기능 도입"</span>
+    </p>
+    <div class="flex-row gap-16" style="flex-wrap: wrap;">
+      <div class="role-card" style="background: var(--po-bg);">
+        <h4 style="color: var(--po-text);">🟣 PO</h4>
+        <p style="color: var(--po-text); opacity: 0.85;">비즈니스 임팩트, 일정 영향, 우선순위 판단 기준, 경쟁사 대응 현황</p>
+      </div>
+      <div class="role-card" style="background: var(--be-bg);">
+        <h4 style="color: var(--be-text);">🔵 BE 개발자</h4>
+        <p style="color: var(--be-text); opacity: 0.85;">PII 마스킹 기술 구현, API 설계, 데이터 파이프라인, 성능 영향</p>
+      </div>
+      <div class="role-card" style="background: var(--design-bg);">
+        <h4 style="color: var(--design-text);">🟠 디자이너</h4>
+        <p style="color: var(--design-text); opacity: 0.85;">마스킹 UI 패턴, 사용자 인지 흐름, 접근성, 정보 표시 방식</p>
+      </div>
+      <div class="role-card" style="background: var(--legal-bg);">
+        <h4 style="color: var(--legal-text);">⚪ 법무</h4>
+        <p style="color: var(--legal-text); opacity: 0.85;">개인정보보호법, GDPR 요건, 가명처리 vs 마스킹, 컴플라이언스</p>
+      </div>
+    </div>
+    <p style="margin-top: 20px; font-size: 0.85rem; color: var(--fog);">
+      각 브리핑에는 핵심 요약 · 역할 관점 배경지식 · 예상 논의 포인트 · 용어 설명이 포함됩니다
+    </p>
+  </div>
+</div>
+
+<!-- ========== SLIDE 7: DEMO — CHAT QA ========== -->
+<div class="slide left" style="gap: 24px;">
+  <div class="full-w">
+    <h3 style="color: var(--iris); font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.1em;">Demo — 실시간 채팅 Q&A</h3>
+    <h2>같은 질문, 역할에 맞는 답변</h2>
+    <div class="card" style="margin-bottom: 16px; padding: 16px 20px;">
+      <p style="font-size: 0.85rem; color: var(--fog); margin-bottom: 6px;">질문</p>
+      <p style="font-size: 1.1rem; font-weight: 600;">"PII 마스킹이 뭔데?"</p>
+    </div>
+    <div class="flex-col gap-12" style="gap: 12px;">
+      <div class="annotation" style="background: var(--be-bg); border-left: 3px solid var(--be-text);">
+        <span class="badge" style="background: rgba(126,184,216,0.15); color: var(--be-text); margin-bottom: 8px;">BE 개발자</span>
+        <p style="color: var(--be-text);">민감 데이터 필드(이름, 전화번호 등)를 해시 또는 토큰으로 치환하는 기술. 주로 DB 레벨 또는 API 응답 레벨에서 처리하며, 성능 오버헤드를 고려해야 합니다.</p>
+      </div>
+      <div class="annotation" style="background: var(--legal-bg); border-left: 3px solid var(--legal-text);">
+        <span class="badge" style="background: rgba(168,176,200,0.15); color: var(--legal-text); margin-bottom: 8px;">법무</span>
+        <p style="color: var(--legal-text);">개인정보보호법 제29조에 따른 안전성 확보 조치의 일환. 가명처리와는 법적 구분이 있으며, 마스킹은 원본 복원이 불가능한 비식별화 방식입니다.</p>
+      </div>
+      <div class="annotation" style="background: var(--design-bg); border-left: 3px solid var(--design-text);">
+        <span class="badge" style="background: rgba(232,168,152,0.15); color: var(--design-text); margin-bottom: 8px;">디자이너</span>
+        <p style="color: var(--design-text);">사용자에게 마스킹된 정보를 어떻게 표시할지의 UI 패턴. 예: •••• 또는 부분 노출(홍*동). 사용자가 "정보가 있다"는 것은 인지하되 내용은 보호.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ========== SLIDE 8: DEMO — LIVE SESSION ========== -->
+<div class="slide left" style="gap: 24px;">
+  <div class="full-w">
+    <h3 style="color: var(--iris); font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.1em;">Demo — 실시간 세션</h3>
+    <h2>스크립트 + 보조설명 + 궤도 이탈 방지</h2>
+    <div class="card" style="padding: 0; overflow: hidden;">
+      <!-- Script line 1 -->
+      <div class="script-line" style="background: var(--charcoal);">
+        <span class="time">10:03:22</span>
+        <span style="font-weight: 600;">PO:</span> "이번 스프린트에서 PII 마스킹 MVP를 넣으려고 합니다"
+      </div>
+      <!-- Annotations for line 1 -->
+      <div style="padding: 4px 16px 12px 16px; display: flex; gap: 8px; flex-wrap: wrap;">
+        <div class="annotation" style="background: var(--be-bg); border-left: 3px solid var(--be-text); flex: 1; margin: 0; min-width: 250px;">
+          <p style="font-size: 0.8rem; color: var(--be-text);">💡 <span style="font-weight: 600;">BE개발자용</span> — MVP 범위에서 마스킹 대상 필드 정의가 선행되어야 합니다</p>
+        </div>
+        <div class="annotation" style="background: var(--legal-bg); border-left: 3px solid var(--legal-text); flex: 1; margin: 0; min-width: 250px;">
+          <p style="font-size: 0.8rem; color: var(--legal-text);">💡 <span style="font-weight: 600;">법무용</span> — 가명처리와 마스킹의 법적 구분을 확인하세요</p>
+        </div>
+      </div>
+      <!-- Suggested questions -->
+      <div style="padding: 4px 16px 12px 16px; display: flex; gap: 8px; flex-wrap: wrap;">
+        <span class="chip" style="font-size: 0.75rem;">마스킹 대상 필드 범위가 정해져 있나요?</span>
+        <span class="chip" style="font-size: 0.75rem;">이건 가명처리인가요, 마스킹인가요?</span>
+      </div>
+      <!-- Script line 2 -->
+      <div class="script-line" style="background: var(--charcoal); border-top: 1px solid var(--iron);">
+        <span class="time">10:04:15</span>
+        <span style="font-weight: 600;">BE개발자:</span> "DB 레벨에서 할지 API 레벨에서 할지..."
+      </div>
+      <!-- Off-track alert -->
+      <div style="padding: 8px 16px 12px 16px;">
+        <div style="background: rgba(245,158,11,0.08); border-left: 3px solid var(--amber); border-radius: 8px; padding: 12px 16px;">
+          <p style="font-size: 0.8rem; color: var(--amber); font-weight: 600;">⚠️ 궤도 이탈 감지</p>
+          <p style="font-size: 0.8rem; color: var(--mist); margin-top: 4px;">구현 방식 논의가 시작되었으나, 아직 마스킹 대상 범위가 합의되지 않았습니다</p>
+          <p style="font-size: 0.8rem; color: var(--amber); margin-top: 4px;">→ "먼저 마스킹 대상 데이터 범위를 정하면 어떨까요?"</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ========== SLIDE 9: ARCHITECTURE ========== -->
+<div class="slide left" style="gap: 24px;">
+  <div class="full-w">
+    <h3 style="color: var(--sky); font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.1em;">Architecture</h3>
+    <h2>기술 스택</h2>
+    <div class="flex-row gap-24" style="flex-wrap: wrap; margin-top: 8px;">
+      <div style="flex: 1; min-width: 400px;">
+        <table>
+          <thead><tr><th>레이어</th><th>기술</th><th>이유</th></tr></thead>
+          <tbody>
+            <tr><td style="color: var(--fe-text);">Frontend</td><td>Next.js + TypeScript</td><td style="color: var(--mist);">SSR, 빠른 프로토타이핑</td></tr>
+            <tr><td style="color: var(--be-text);">Backend</td><td>FastAPI (Python)</td><td style="color: var(--mist);">AI 모듈 통합, Pydantic</td></tr>
+            <tr><td style="color: var(--iris);">AI</td><td>LLM API</td><td style="color: var(--mist);">역할별 맞춤 생성</td></tr>
+            <tr><td style="color: var(--sage);">실시간</td><td>WebSocket / SSE</td><td style="color: var(--mist);">스크립트 스트리밍</td></tr>
+            <tr><td style="color: var(--amber);">음성</td><td>Web Speech API</td><td style="color: var(--mist);">실시간 STT</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="card" style="flex: 1; min-width: 300px; font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; line-height: 1.8; color: var(--mist);">
+        <p style="color: var(--snow); font-weight: 600; margin-bottom: 8px; font-family: 'Inter', sans-serif;">시스템 구조</p>
+        <span style="color: var(--fe-text);">Next.js Frontend</span><br>
+        &nbsp;&nbsp;├─ 미팅 대시보드<br>
+        &nbsp;&nbsp;├─ 브리핑 카드뷰<br>
+        &nbsp;&nbsp;└─ 미팅 세션 (실시간)<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;│ <span style="color: var(--fog);">REST API</span><br>
+        <span style="color: var(--be-text);">FastAPI Backend</span><br>
+        &nbsp;&nbsp;├─ Meeting Manager<br>
+        &nbsp;&nbsp;├─ Briefing Generator<br>
+        &nbsp;&nbsp;├─ Chat QA Engine<br>
+        &nbsp;&nbsp;├─ Script Engine<br>
+        &nbsp;&nbsp;└─ Annotation Generator<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;│<br>
+        <span style="color: var(--iris);">LLM API</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ========== SLIDE 10: KIRO WORKFLOW ========== -->
+<div class="slide left" style="gap: 24px;">
+  <div class="full-w">
+    <h3 style="color: var(--iris); font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.1em;">Development with Kiro</h3>
+    <h2>Spec-Driven Development</h2>
+    <p style="color: var(--mist); margin-top: 4px;">요구사항부터 코드까지, Kiro가 구조를 잡아준다</p>
+    <div class="flex-row gap-16" style="flex-wrap: wrap; margin-top: 16px;">
+      <div class="card" style="flex: 1; min-width: 200px; border-left: 3px solid var(--iris);">
+        <p style="color: var(--iris); font-weight: 700; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.08em;">Step 1</p>
+        <h4 style="margin-top: 6px;">Requirements</h4>
+        <p style="color: var(--mist); font-size: 0.85rem; margin-top: 8px;">12개 요구사항을 사용자 스토리 + 인수 조건(EARS) 형식으로 작성</p>
+        <p style="color: var(--fog); font-size: 0.75rem; margin-top: 8px; font-family: 'JetBrains Mono', monospace;">.kiro/specs/.../requirements.md</p>
+      </div>
+      <div style="display: flex; align-items: center; color: var(--fog); font-size: 1.5rem;">→</div>
+      <div class="card" style="flex: 1; min-width: 200px; border-left: 3px solid var(--sage);">
+        <p style="color: var(--sage); font-weight: 700; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.08em;">Step 2</p>
+        <h4 style="margin-top: 6px;">Design</h4>
+        <p style="color: var(--mist); font-size: 0.85rem; margin-top: 8px;">Kiro가 아키텍처, 데이터 모델, API 스펙, WebSocket 프로토콜 자동 생성</p>
+        <p style="color: var(--fog); font-size: 0.75rem; margin-top: 8px; font-family: 'JetBrains Mono', monospace;">.kiro/specs/.../design.md</p>
+      </div>
+      <div style="display: flex; align-items: center; color: var(--fog); font-size: 1.5rem;">→</div>
+      <div class="card" style="flex: 1; min-width: 200px; border-left: 3px solid var(--amber);">
+        <p style="color: var(--amber); font-weight: 700; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.08em;">Step 3</p>
+        <h4 style="margin-top: 6px;">Tasks</h4>
+        <p style="color: var(--mist); font-size: 0.85rem; margin-top: 8px;">14개 태스크를 5개 Phase로 분류, 3명이 바로 분업 시작</p>
+        <p style="color: var(--fog); font-size: 0.75rem; margin-top: 8px; font-family: 'JetBrains Mono', monospace;">.kiro/specs/.../tasks.md</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ========== SLIDE 11: KIRO STEERING & HOOKS ========== -->
+<div class="slide left" style="gap: 24px;">
+  <div class="full-w">
+    <h3 style="color: var(--iris); font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.1em;">Development with Kiro</h3>
+    <h2>Steering Rules + Agent Hooks</h2>
+    <div class="flex-row gap-24" style="flex-wrap: wrap; margin-top: 12px;">
+      <div style="flex: 1; min-width: 350px;">
+        <h4 style="color: var(--snow); margin-bottom: 12px;">Steering Rules — AI가 프로젝트를 이해한다</h4>
+        <table style="font-size: 0.85rem;">
+          <thead><tr><th>파일</th><th>역할</th><th>모드</th></tr></thead>
+          <tbody>
+            <tr><td style="color: var(--iris); font-family: 'JetBrains Mono', monospace; font-size: 0.8rem;">product.md</td><td>프로덕트 목적, 타겟 유저</td><td><span class="badge" style="background: var(--slate); color: var(--sage); font-size: 0.7rem;">always</span></td></tr>
+            <tr><td style="color: var(--iris); font-family: 'JetBrains Mono', monospace; font-size: 0.8rem;">tech.md</td><td>기술 스택 정의</td><td><span class="badge" style="background: var(--slate); color: var(--sage); font-size: 0.7rem;">always</span></td></tr>
+            <tr><td style="color: var(--iris); font-family: 'JetBrains Mono', monospace; font-size: 0.8rem;">structure.md</td><td>프로젝트 구조, 컨벤션</td><td><span class="badge" style="background: var(--slate); color: var(--sage); font-size: 0.7rem;">always</span></td></tr>
+            <tr><td style="color: var(--iris); font-family: 'JetBrains Mono', monospace; font-size: 0.8rem;">dark-mode.md</td><td>다크모드 컬러 시스템</td><td><span class="badge" style="background: var(--slate); color: var(--amber); font-size: 0.7rem;">fileMatch</span></td></tr>
+          </tbody>
+        </table>
+        <p style="color: var(--mist); font-size: 0.8rem; margin-top: 8px; font-style: italic;">→ 매번 설명 안 해도 AI가 컨벤션을 따른다</p>
+      </div>
+      <div style="flex: 1; min-width: 350px;">
+        <h4 style="color: var(--snow); margin-bottom: 12px;">Agent Hooks — 반복 작업 자동화</h4>
+        <table style="font-size: 0.85rem;">
+          <thead><tr><th>Hook</th><th>트리거</th><th>동작</th></tr></thead>
+          <tbody>
+            <tr><td style="color: var(--sage); font-family: 'JetBrains Mono', monospace; font-size: 0.8rem;">auto-test</td><td>API 라우터 생성</td><td style="color: var(--mist);">테스트 자동 생성</td></tr>
+            <tr><td style="color: var(--sage); font-family: 'JetBrains Mono', monospace; font-size: 0.8rem;">component-export</td><td>컴포넌트 생성</td><td style="color: var(--mist);">index.ts 자동 export</td></tr>
+            <tr><td style="color: var(--sage); font-family: 'JetBrains Mono', monospace; font-size: 0.8rem;">pydantic-validate</td><td>모델 저장</td><td style="color: var(--mist);">스키마 일관성 검증</td></tr>
+          </tbody>
+        </table>
+        <p style="color: var(--mist); font-size: 0.8rem; margin-top: 8px; font-style: italic;">→ 3명이 분업해도 Hook이 일관성을 잡아준다</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ========== SLIDE 12: KIRO HIGHLIGHTS ========== -->
+<div class="slide left" style="gap: 24px;">
+  <div class="full-w">
+    <h3 style="color: var(--iris); font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.1em;">Development with Kiro</h3>
+    <h2>Kiro가 해커톤에서 빛난 순간</h2>
+    <div class="flex-row gap-16" style="flex-wrap: wrap; margin-top: 16px;">
+      <div class="card" style="flex: 1; min-width: 250px;">
+        <div style="font-size: 1.5rem; margin-bottom: 8px;">1</div>
+        <h4 style="color: var(--iris);">요구사항 → 설계서 자동 생성</h4>
+        <div style="margin-top: 12px; padding: 12px; background: var(--midnight); border-radius: 8px; font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; line-height: 1.6;">
+          <span style="color: var(--mist);">12개 요구사항 작성</span><br>
+          <span style="color: var(--fog);">&nbsp;&nbsp;→</span> <span style="color: var(--sage);">아키텍처, 데이터 모델, API 스펙</span><br>
+          <span style="color: var(--fog);">&nbsp;&nbsp;→</span> <span style="color: var(--amber);">3명이 바로 분업 시작</span>
+        </div>
+      </div>
+      <div class="card" style="flex: 1; min-width: 250px;">
+        <div style="font-size: 1.5rem; margin-bottom: 8px;">2</div>
+        <h4 style="color: var(--iris);">Steering으로 컨벤션 통일</h4>
+        <div style="margin-top: 12px; padding: 12px; background: var(--midnight); border-radius: 8px; font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; line-height: 1.6;">
+          <span style="color: var(--mist);">Python: snake_case</span><br>
+          <span style="color: var(--mist);">TypeScript: camelCase</span><br>
+          <span style="color: var(--mist);">Color: 브랜딩 팔레트만</span><br>
+          <span style="color: var(--fog);">&nbsp;&nbsp;→</span> <span style="color: var(--sage);">누가 써도 일관된 코드</span>
+        </div>
+      </div>
+      <div class="card" style="flex: 1; min-width: 250px;">
+        <div style="font-size: 1.5rem; margin-bottom: 8px;">3</div>
+        <h4 style="color: var(--iris);">Hook으로 품질 유지</h4>
+        <div style="margin-top: 12px; padding: 12px; background: var(--midnight); border-radius: 8px; font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; line-height: 1.6;">
+          <span style="color: var(--mist);">API 라우터 생성</span> <span style="color: var(--fog);">→</span> <span style="color: var(--sage);">테스트 자동</span><br>
+          <span style="color: var(--mist);">모델 수정</span> <span style="color: var(--fog);">→</span> <span style="color: var(--sage);">불일치 감지</span><br>
+          <span style="color: var(--fog);">&nbsp;&nbsp;→</span> <span style="color: var(--amber);">해커톤 속도에서도 품질</span>
+        </div>
+      </div>
+    </div>
+    <div style="margin-top: 20px; padding: 16px 24px; background: var(--charcoal); border-radius: 10px; border: 1px solid var(--iris); text-align: center;">
+      <p style="font-size: 1.1rem; color: var(--snow); font-weight: 600;">3명 x 4시간 = <span style="color: var(--iris);">Kiro 없이는 불가능한 결과물</span></p>
+    </div>
+  </div>
+</div>
+
+<!-- ========== SLIDE 13: ROADMAP ========== -->
+<div class="slide left" style="gap: 24px;">
+  <div class="full-w">
+    <h3 style="color: var(--sage); font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.1em;">Roadmap</h3>
+    <h2>MVP → 확장 → 비전</h2>
+    <div class="flex-row gap-16" style="flex-wrap: wrap; margin-top: 8px;">
+      <div class="roadmap-col" style="background: var(--charcoal); border: 1px solid var(--iris);">
+        <h4 style="color: var(--iris);">🏁 MVP (해커톤)</h4>
+        <ul>
+          <li>미팅 생성 + 역할 입력</li>
+          <li>역할별 맞춤 브리핑 생성</li>
+          <li>실시간 채팅 Q&A</li>
+          <li>실시간 스크립트</li>
+          <li>개인 맞춤 보조설명</li>
+          <li>추천 질문 / 궤도 이탈 방지</li>
+        </ul>
+      </div>
+      <div class="roadmap-col" style="background: var(--charcoal); border: 1px solid var(--iron);">
+        <h4 style="color: var(--mist);">🚀 단기 확장</h4>
+        <ul>
+          <li>회의 전 자동 브리핑 발송</li>
+          <li>캘린더 연동 (Google/Outlook)</li>
+          <li>슬랙 / 팀즈 통합</li>
+          <li>회의 히스토리 분석</li>
+          <li>팀 지식 그래프 구축</li>
+        </ul>
+      </div>
+      <div class="roadmap-col" style="background: var(--charcoal); border: 1px solid var(--iron);">
+        <h4 style="color: var(--mist);">🌍 장기 비전</h4>
+        <ul>
+          <li>AI 패실리테이터</li>
+          <li>역할별 액션아이템 자동 정리</li>
+          <li>회의 효율성 대시보드</li>
+          <li>조직 얼라인먼트 스코어</li>
+          <li style="color: var(--sage); font-weight: 600;">회의 시간 50% 감소 달성</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ========== SLIDE 11: IMPACT ========== -->
+<div class="slide center" style="gap: 32px;">
+  <div class="full-w">
+    <h3 style="color: var(--amber); font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.1em;">Expected Impact</h3>
+    <h2>기대 효과</h2>
+    <div class="flex-row gap-24" style="justify-content: center; flex-wrap: wrap; margin-top: 16px;">
+      <div class="card center" style="flex: 1; min-width: 200px;">
+        <p style="font-size: 2.5rem; font-weight: 800; color: var(--iris);">60%→20%</p>
+        <p style="color: var(--mist); font-size: 0.9rem; margin-top: 8px;">얼라인에 쓰는<br>회의 시간 비율</p>
+      </div>
+      <div class="card center" style="flex: 1; min-width: 200px;">
+        <p style="font-size: 2.5rem; font-weight: 800; color: var(--iris);">8→2회</p>
+        <p style="color: var(--mist); font-size: 0.9rem; margin-top: 8px;">"그게 뭔데?"<br>회의당 횟수</p>
+      </div>
+      <div class="card center" style="flex: 1; min-width: 200px;">
+        <p style="font-size: 2.5rem; font-weight: 800; color: var(--iris);">40%→10%</p>
+        <p style="color: var(--mist); font-size: 0.9rem; margin-top: 8px;">결론 없이<br>끝나는 회의</p>
+      </div>
+      <div class="card center" style="flex: 1; min-width: 200px;">
+        <p style="font-size: 2.5rem; font-weight: 800; color: var(--sage);">50%↓</p>
+        <p style="color: var(--mist); font-size: 0.9rem; margin-top: 8px;">궁극적 목표<br>회의 시간 절감</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ========== SLIDE 12: CLOSING ========== -->
+<div class="slide center" style="gap: 24px;">
+  <div style="font-size: 0.85rem; color: var(--iris); font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase;">Meeting Alignment AI</div>
+  <h1 style="font-size: 2.8rem; max-width: 700px; line-height: 1.3;">
+    Aligned, not uniform
+  </h1>
+  <p style="font-size: 1.3rem; color: var(--mist); max-width: 600px; margin-top: 8px;">
+    모두가 같은 걸 보는 게 아니라,<br>
+    각자의 관점에서 같은 수준으로 이해하는 것.
+  </p>
+  <div style="margin-top: 40px; padding: 20px 32px; background: var(--charcoal); border-radius: 12px; border: 1px solid var(--iron);">
+    <p style="font-size: 1rem; color: var(--snow);">
+      회의가 더 짧아지고, 더 생산적이고, 아무도 뒤처지지 않는 세상.
+    </p>
+  </div>
+  <div style="margin-top: 32px; display: flex; gap: 12px;">
+    <span class="badge" style="background: var(--po-bg); color: var(--po-text);">PO</span>
+    <span class="badge" style="background: var(--be-bg); color: var(--be-text);">AI 개발자</span>
+    <span class="badge" style="background: var(--fe-bg); color: var(--fe-text);">백엔드 개발자</span>
+  </div>
+  <p style="margin-top: 16px; font-size: 0.85rem; color: var(--fog);">Kiro Hackathon 2025</p>
+</div>
+
+<script>
+const slides = document.querySelectorAll('.slide');
+let current = 0;
+
+function showSlide(n) {
+  slides[current].classList.remove('active');
+  current = (n + slides.length) % slides.length;
+  slides[current].classList.add('active');
+  document.getElementById('progress').style.width = ((current + 1) / slides.length * 100) + '%';
+  document.getElementById('counter').textContent = (current + 1) + ' / ' + slides.length;
+}
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'Enter') { e.preventDefault(); showSlide(current + 1); }
+  if (e.key === 'ArrowLeft' || e.key === 'Backspace') { e.preventDefault(); showSlide(current - 1); }
+  if (e.key === 'Home') { e.preventDefault(); showSlide(0); }
+  if (e.key === 'End') { e.preventDefault(); showSlide(slides.length - 1); }
+});
+
+// Touch support
+let touchStartX = 0;
+document.addEventListener('touchstart', (e) => { touchStartX = e.changedTouches[0].screenX; });
+document.addEventListener('touchend', (e) => {
+  const diff = e.changedTouches[0].screenX - touchStartX;
+  if (Math.abs(diff) > 50) { diff < 0 ? showSlide(current + 1) : showSlide(current - 1); }
+});
+
+// Click navigation (left half = prev, right half = next)
+document.addEventListener('click', (e) => {
+  if (e.target.closest('a, button, .chip')) return;
+  e.clientX > window.innerWidth / 2 ? showSlide(current + 1) : showSlide(current - 1);
+});
+
+// Init
+showSlide(0);
+</script>
+</body>
+</html>
