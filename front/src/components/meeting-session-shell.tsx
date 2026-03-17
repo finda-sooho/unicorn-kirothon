@@ -336,7 +336,7 @@ function GuidePanel({ session, visibleTopic, onDismissTopic, onPickQuestion }: {
 
 function ChatPanel({ messages, chatInput, manualTranscript, sendingChat, submittingTranscript, onChangeChatInput, onChangeManualTranscript, onSubmitChat, onSubmitManualTranscript }: { messages: ChatMessage[]; chatInput: string; manualTranscript: string; sendingChat: boolean; submittingTranscript: boolean; onChangeChatInput: (v: string) => void; onChangeManualTranscript: (v: string) => void; onSubmitChat: (e: React.FormEvent<HTMLFormElement>) => Promise<void>; onSubmitManualTranscript: (e: React.FormEvent<HTMLFormElement>) => Promise<void> }) {
   return (
-    <div className="panel flex flex-col">
+    <div className="panel flex min-h-0 flex-1 flex-col overflow-hidden">
       <div className="flex items-center justify-between gap-3 border-b border-[var(--border-soft)] pb-3">
         <h2 className="section-title">질문</h2>
         <span className="status-pill">{messages.length}개</span>
