@@ -22,6 +22,7 @@ import {
 } from "@/lib/api";
 import { useDeepgramSTT, type DeepgramTranscriptEvent } from "@/lib/audio/use-deepgram-stt";
 import { useAudioRecorder } from "@/lib/audio/use-audio-recorder";
+import { loadGlobalProfile } from "@/lib/profile-store";
 import { resolveRoleTheme } from "@/lib/role-theme";
 import type {
   Annotation,
@@ -73,6 +74,20 @@ function initialProfileDraft(meeting: MeetingDetail | null, session: SessionStat
       customFields:
         session.knowledge_profile.custom_fields.length > 0
           ? session.knowledge_profile.custom_fields
+          : [{ label: "", value: "" }],
+    };
+  }
+
+  // Fall back to global profile
+  const global = loadGlobalProfile();
+  if (global.updated_at) {
+    return {
+      role: global.role || meeting?.participant_roles[0] || "",
+      expertise: global.expertise_areas.join("\n"),
+      gaps: global.knowledge_gaps.join("\n"),
+      customFields:
+        global.custom_fields.length > 0
+          ? global.custom_fields
           : [{ label: "", value: "" }],
     };
   }
@@ -400,23 +415,23 @@ export function MeetingSessionShell({ meetingId }: { meetingId: string }) {
 
   if (loading) {
     return (
-      <main className="mx-auto flex min-h-screen w-full max-w-[1440px] flex-col gap-3 px-4 py-3 sm:px-6 lg:px-8">
-        <div className="panel h-20 animate-pulse" />
-        <div className="grid gap-3 lg:grid-cols-[1.2fr_0.8fr]">
-          <div className="panel h-[36rem] animate-pulse" />
-          <div className="panel h-[36rem] animate-pulse" />
+      <div className="flex flex-col gap-4">
+        <div className="panel h-28 animate-pulse" />
+        <div className="grid gap-4 lg:grid-cols-[1.25fr_0.75fr]">
+          <div className="panel h-[40rem] animate-pulse" />
+          <div className="panel h-[40rem] animate-pulse" />
         </div>
-      </main>
+      </div>
     );
   }
 
   if (!meeting || !session) {
     return (
-      <main className="mx-auto flex min-h-screen w-full max-w-5xl items-center justify-center px-4 py-12">
+      <div className="flex items-center justify-center py-12">
         <div className="empty-state max-w-xl text-center">
           {error ?? "세션 정보를 불러오지 못했습니다."}
         </div>
-      </main>
+      </div>
     );
   }
 
@@ -427,11 +442,11 @@ export function MeetingSessionShell({ meetingId }: { meetingId: string }) {
       : null;
 
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-[1440px] flex-col gap-3 px-4 py-3 sm:px-6 lg:px-8">
-      {/* Compact header */}
-      <section className="panel z-20 flex shrink-0 flex-col gap-2">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
+    <div className="flex flex-col gap-4">
+      {/* Sticky header */}
+      <section className="panel sticky top-4 z-20 flex flex-col gap-3">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div className="flex items-center gap-4">
             <div>
               <span className="eyebrow">Live Session</span>
               <h1 className="text-lg font-bold tracking-[-0.02em] text-[var(--text-primary)] sm:text-xl">
@@ -598,7 +613,7 @@ export function MeetingSessionShell({ meetingId }: { meetingId: string }) {
           />
         ) : null}
       </section>
-    </main>
+    </div>
   );
 }
 
@@ -801,8 +816,13 @@ function ProfileSettingsPanel({
   onProfileDraftChange: React.Dispatch<React.SetStateAction<ProfileDraft>>;
   onSaveProfile: (event: React.FormEvent<HTMLFormElement>) => Promise<void>;
 }) {
+  const selectedTheme = profileDraft.role
+    ? resolveRoleTheme(profileDraft.role)
+    : null;
+
   return (
-    <form className="sub-panel flex flex-col gap-4" onSubmit={onSaveProfile}>
+    <form className="sub-panel flex flex-col gap-5" onSubmit={onSaveProfile}>
+      {/* Header */}
       <div className="flex items-center justify-between gap-3">
         <h2 className="section-title">지식 프로필 설정</h2>
         <span className="status-pill">
@@ -810,64 +830,81 @@ function ProfileSettingsPanel({
         </span>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2">
-        <label className="field-group">
-          <span className="field-label">역할</span>
-          <select
-            className="input-shell"
-            onChange={(event) =>
-              onProfileDraftChange((current) => ({
-                ...current,
-                role: event.target.value,
-              }))
-            }
-            value={profileDraft.role}
-          >
-            <option value="">역할 선택</option>
-            {meeting.participant_roles.map((role) => (
-              <option key={role} value={role}>
+      {/* ── 그룹 1: 역할 선택 ── */}
+      <fieldset className="space-y-3 rounded-2xl border border-[var(--border-soft)] p-4">
+        <legend className="field-label px-2">역할</legend>
+        <div className="flex flex-wrap gap-2">
+          {meeting.participant_roles.map((role) => {
+            const theme = resolveRoleTheme(role);
+            const isSelected = profileDraft.role === role;
+            return (
+              <button
+                className="role-chip transition-all"
+                key={role}
+                onClick={() =>
+                  onProfileDraftChange((current) => ({ ...current, role }))
+                }
+                style={{
+                  background: isSelected ? theme.background : "transparent",
+                  borderColor: isSelected ? theme.border : "var(--border-soft)",
+                  color: isSelected ? theme.text : "var(--text-tertiary)",
+                  opacity: isSelected ? 1 : 0.7,
+                }}
+                type="button"
+              >
                 {role}
-              </option>
-            ))}
-          </select>
-        </label>
+              </button>
+            );
+          })}
+        </div>
+        {selectedTheme && (
+          <p className="text-xs leading-5" style={{ color: selectedTheme.text }}>
+            {profileDraft.role} 역할로 맞춤 보조를 받습니다.
+          </p>
+        )}
+      </fieldset>
 
-        <label className="field-group">
-          <span className="field-label">전문 분야</span>
-          <textarea
-            className="textarea-shell"
-            onChange={(event) =>
-              onProfileDraftChange((current) => ({
-                ...current,
-                expertise: event.target.value,
-              }))
-            }
-            placeholder={"한 줄에 하나씩 입력\n예: API 설계\n예: 장애 대응"}
-            rows={3}
-            value={profileDraft.expertise}
-          />
-        </label>
-      </div>
+      {/* ── 그룹 2: 역량 (잘 아는 분야 / 부족한 영역) ── */}
+      <fieldset className="space-y-4 rounded-2xl border border-[var(--border-soft)] p-4">
+        <legend className="field-label px-2">역량</legend>
+        <div className="grid gap-4 md:grid-cols-2">
+          <label className="field-group">
+            <span className="text-xs font-medium text-[var(--text-secondary)]">잘 아는 분야</span>
+            <textarea
+              className="textarea-shell"
+              onChange={(event) =>
+                onProfileDraftChange((current) => ({
+                  ...current,
+                  expertise: event.target.value,
+                }))
+              }
+              placeholder={"한 줄에 하나씩\n예: API 설계\n예: 장애 대응"}
+              rows={3}
+              value={profileDraft.expertise}
+            />
+          </label>
+          <label className="field-group">
+            <span className="text-xs font-medium text-[var(--text-secondary)]">부족한 영역</span>
+            <textarea
+              className="textarea-shell"
+              onChange={(event) =>
+                onProfileDraftChange((current) => ({
+                  ...current,
+                  gaps: event.target.value,
+                }))
+              }
+              placeholder={"한 줄에 하나씩\n예: PII\n예: 보관 정책"}
+              rows={3}
+              value={profileDraft.gaps}
+            />
+          </label>
+        </div>
+      </fieldset>
 
-      <label className="field-group">
-        <span className="field-label">부족한 지식 영역</span>
-        <textarea
-          className="textarea-shell"
-          onChange={(event) =>
-            onProfileDraftChange((current) => ({
-              ...current,
-              gaps: event.target.value,
-            }))
-          }
-          placeholder={"한 줄에 하나씩 입력\n예: PII\n예: 보관 정책"}
-          rows={3}
-          value={profileDraft.gaps}
-        />
-      </label>
-
-      <div className="space-y-3">
-        <div className="flex items-center justify-between gap-3">
-          <span className="field-label">커스텀 필드</span>
+      {/* ── 그룹 3: 추가 정보 (커스텀 필드) ── */}
+      <fieldset className="space-y-3 rounded-2xl border border-[var(--border-soft)] p-4">
+        <div className="flex items-center justify-between">
+          <legend className="field-label px-2">추가 정보</legend>
           <button
             className="button-ghost text-xs"
             onClick={() =>
@@ -878,10 +915,9 @@ function ProfileSettingsPanel({
             }
             type="button"
           >
-            필드 추가
+            + 필드 추가
           </button>
         </div>
-
         <div className="grid gap-3">
           {profileDraft.customFields.map((field, index) => (
             <div className="grid gap-3 md:grid-cols-[0.9fr_1.1fr_auto]" key={`${index}-${field.label}`}>
@@ -933,8 +969,9 @@ function ProfileSettingsPanel({
             </div>
           ))}
         </div>
-      </div>
+      </fieldset>
 
+      {/* 저장 */}
       <div className="flex justify-end">
         <button className="button-primary" disabled={savingProfile} type="submit">
           {savingProfile ? "저장 중..." : "프로필 저장"}

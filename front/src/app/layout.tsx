@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { JetBrains_Mono } from "next/font/google";
 import localFont from "next/font/local";
 import { SessionProvider } from "@/components/session-provider";
+import { AppSidebar } from "@/components/app-sidebar";
 import "./globals.css";
 
 const happyFont = localFont({
@@ -43,7 +44,12 @@ export default function RootLayout({
   return (
     <html lang="ko">
       <body className={`${happyFont.variable} ${mono.variable} antialiased`}>
-        <SessionProvider>{children}</SessionProvider>
+        <SessionProvider>
+          <div className="app-layout">
+            <AppSidebar />
+            <main className="app-main">{children}</main>
+          </div>
+        </SessionProvider>
       </body>
     </html>
   );

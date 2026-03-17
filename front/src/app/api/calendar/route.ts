@@ -3,6 +3,7 @@ import { auth } from "@/auth";
 interface CalendarEvent {
   id: string;
   title: string;
+  description: string;
   start: string;
   end: string;
   attendees: Array<{ email: string; name?: string }>;
@@ -56,6 +57,7 @@ export async function GET(req: Request) {
     .map((item: any) => ({
       id: item.id,
       title: item.summary || "(제목 없음)",
+      description: item.description || "",
       start: item.start?.dateTime || item.start?.date || "",
       end: item.end?.dateTime || item.end?.date || "",
       attendees: (item.attendees || [])

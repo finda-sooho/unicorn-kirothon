@@ -2,28 +2,9 @@
 
 import { startTransition, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { useSession, signIn, signOut } from "next-auth/react";
-
-import { createMeeting, listMeetings } from "@/lib/api";
+import { listMeetings } from "@/lib/api";
 import { resolveRoleTheme } from "@/lib/role-theme";
-import type { CreateMeetingPayload, MeetingSummary } from "@/lib/types";
-import { CalendarImport } from "@/components/calendar-import";
-import type { CalendarImportResult } from "@/components/calendar-import";
-
-const defaultForm = {
-  title: "",
-  description: "",
-  agenda: "",
-  background: "",
-  roles: "PO\nBE 개발자\n디자이너\n법무",
-};
-
-function splitMultiline(value: string) {
-  return value
-    .split(/\n|,/)
-    .map((item) => item.trim())
-    .filter(Boolean);
-}
+import type { MeetingSummary } from "@/lib/types";
 
 function formatDate(value: string) {
   return new Intl.DateTimeFormat("ko-KR", {
@@ -34,28 +15,19 @@ function formatDate(value: string) {
 
 export function DashboardShell() {
   const router = useRouter();
-  const { data: session, status: authStatus } = useSession();
   const [meetings, setMeetings] = useState<MeetingSummary[]>([]);
-  const [form, setForm] = useState(defaultForm);
-  const [importedParticipants, setImportedParticipants] = useState<string[]>(
-    [],
-  );
   const [loading, setLoading] = useState(true);
-  const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
-
     async function loadMeetings() {
       try {
         setLoading(true);
-        const nextMeetings = await listMeetings();
-        if (cancelled) {
-          return;
-        }
+        const data = await listMeetings();
+        if (cancelled) return;
         startTransition(() => {
-          setMeetings(nextMeetings);
+          setMeetings(data);
           setError(null);
         });
       } catch (cause) {
@@ -67,25 +39,19 @@ export function DashboardShell() {
           );
         }
       } finally {
-        if (!cancelled) {
-          setLoading(false);
-        }
+        if (!cancelled) setLoading(false);
       }
     }
-
     void loadMeetings();
-
-    return () => {
-      cancelled = true;
-    };
+    return () => { cancelled = true; };
   }, []);
 
-  async function handleRefreshMeetings() {
+  async function handleRefresh() {
     try {
       setLoading(true);
-      const nextMeetings = await listMeetings();
+      const data = await listMeetings();
       startTransition(() => {
-        setMeetings(nextMeetings);
+        setMeetings(data);
         setError(null);
       });
     } catch (cause) {
@@ -99,51 +65,8 @@ export function DashboardShell() {
     }
   }
 
-  function handleCalendarImport(result: CalendarImportResult) {
-    setForm((current) => ({
-      ...current,
-      title: result.title,
-      roles: result.participants.join("\n"),
-    }));
-    setImportedParticipants(result.participants);
-  }
-
-  function clearImport() {
-    setImportedParticipants([]);
-    setForm((current) => ({
-      ...current,
-      title: "",
-      roles: defaultForm.roles,
-    }));
-  }
-
-  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const payload: CreateMeetingPayload = {
-      title: form.title,
-      description: form.description,
-      agenda_items: splitMultiline(form.agenda),
-      background_material: form.background,
-      participant_roles: splitMultiline(form.roles),
-    };
-
-    try {
-      setSubmitting(true);
-      const created = await createMeeting(payload);
-      router.push(`/meetings/${created.id}`);
-    } catch (cause) {
-      setError(
-        cause instanceof Error
-          ? cause.message
-          : "미팅을 생성하지 못했습니다.",
-      );
-    } finally {
-      setSubmitting(false);
-    }
-  }
-
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-7xl flex-col gap-8 px-4 py-8 sm:px-6 lg:px-8 lg:py-12">
+    <div className="flex flex-col gap-8">
       {/* Header */}
       <header className="flex items-start justify-between gap-4">
         <div className="flex flex-col gap-2">
@@ -156,41 +79,13 @@ export function DashboardShell() {
             맞춤 보조설명까지 한 흐름으로 연결됩니다.
           </p>
         </div>
-
-        {/* User menu */}
-        <div className="shrink-0">
-          {authStatus === "authenticated" && session?.user ? (
-            <div className="flex items-center gap-3">
-              {session.user.image && (
-                <img
-                  src={session.user.image}
-                  alt=""
-                  className="h-8 w-8 rounded-full"
-                />
-              )}
-              <div className="hidden flex-col sm:flex">
-                <span className="text-xs font-medium text-[var(--text-primary)]">
-                  {session.user.name}
-                </span>
-                <button
-                  type="button"
-                  className="text-left text-[10px] text-[var(--text-tertiary)] hover:underline"
-                  onClick={() => signOut()}
-                >
-                  로그아웃
-                </button>
-              </div>
-            </div>
-          ) : authStatus === "unauthenticated" ? (
-            <button
-              type="button"
-              className="button-ghost text-xs"
-              onClick={() => signIn("google")}
-            >
-              Google 로그인
-            </button>
-          ) : null}
-        </div>
+        <button
+          className="button-primary shrink-0"
+          onClick={() => router.push("/meetings/new")}
+          type="button"
+        >
+          새 미팅
+        </button>
       </header>
 
       {/* Stats */}
@@ -201,244 +96,91 @@ export function DashboardShell() {
         </div>
         <div className="metric-card">
           <span className="metric-value">
-            {meetings.reduce(
-              (sum, meeting) => sum + meeting.briefing_ready_count,
-              0,
-            )}
+            {meetings.reduce((s, m) => s + m.briefing_ready_count, 0)}
           </span>
           <span className="metric-label">생성된 브리핑</span>
         </div>
         <div className="metric-card">
           <span className="metric-value">
-            {meetings.reduce(
-              (sum, meeting) => sum + meeting.participant_role_count,
-              0,
-            )}
+            {meetings.reduce((s, m) => s + m.participant_role_count, 0)}
           </span>
           <span className="metric-label">역할 슬롯</span>
         </div>
       </div>
 
-      {/* Main content */}
-      <section className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
-        {/* Meeting list */}
-        <div className="panel flex flex-col gap-5">
-          <div className="flex items-center justify-between gap-3">
-            <h2 className="section-title">최근 미팅</h2>
-            <button
-              className="button-ghost text-xs"
-              onClick={() => void handleRefreshMeetings()}
-              type="button"
-            >
-              새로고침
-            </button>
-          </div>
-
-          {loading ? (
-            <div className="grid gap-3">
-              {Array.from({ length: 3 }).map((_, index) => (
-                <div className="skeleton-card" key={index} />
-              ))}
-            </div>
-          ) : meetings.length === 0 ? (
-            <div className="empty-state">
-              아직 생성된 미팅이 없습니다.
-              <br />
-              우측 폼에서 첫 미팅을 만들어 보세요.
-            </div>
-          ) : (
-            <div className="scroll-area flex max-h-[32rem] flex-col gap-3 overflow-y-auto pr-1">
-              {meetings.map((meeting) => (
-                <button
-                  className="meeting-row text-left"
-                  key={meeting.id}
-                  onClick={() => router.push(`/meetings/${meeting.id}`)}
-                  type="button"
-                >
-                  <div className="flex flex-col gap-3">
-                    <div className="flex flex-wrap items-start justify-between gap-3">
-                      <div className="space-y-1">
-                        <h3 className="text-[15px] font-semibold text-[var(--text-primary)]">
-                          {meeting.title}
-                        </h3>
-                        <p className="text-xs text-[var(--text-tertiary)]">
-                          {formatDate(meeting.created_at)}
-                        </p>
-                      </div>
-                      <div className="status-pill">
-                        {meeting.briefing_ready_count}/
-                        {meeting.briefing_total_count} 브리핑
-                      </div>
-                    </div>
-
-                    <div className="flex flex-wrap gap-2">
-                      {meeting.participant_roles.map((role) => {
-                        const theme = resolveRoleTheme(role);
-                        return (
-                          <span
-                            className="role-chip"
-                            key={role}
-                            style={{
-                              background: theme.background,
-                              borderColor: theme.border,
-                              color: theme.text,
-                            }}
-                          >
-                            {role}
-                          </span>
-                        );
-                      })}
-                    </div>
-                  </div>
-                </button>
-              ))}
-            </div>
-          )}
+      {/* Meeting list */}
+      <section className="panel flex flex-col gap-5">
+        <div className="flex items-center justify-between gap-3">
+          <h2 className="section-title">최근 미팅</h2>
+          <button
+            className="button-ghost text-xs"
+            onClick={() => void handleRefresh()}
+            type="button"
+          >
+            새로고침
+          </button>
         </div>
 
-        {/* Create form */}
-        <form className="panel flex flex-col gap-5" onSubmit={handleSubmit}>
-          <div className="space-y-2">
-            <span className="eyebrow">Create Meeting</span>
-            <h2 className="section-title text-xl">새 미팅 생성</h2>
-            <p className="text-sm leading-6 text-[var(--text-secondary)]">
-              캘린더에서 회의를 선택하거나 직접 입력해 주세요.
-            </p>
+        {error && <div className="error-banner">{error}</div>}
+
+        {loading ? (
+          <div className="grid gap-3">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <div className="skeleton-card" key={i} />
+            ))}
           </div>
-
-          {/* Calendar import */}
-          <CalendarImport onImport={handleCalendarImport} />
-
-          {/* Imported info badge */}
-          {importedParticipants.length > 0 && (
-            <div className="flex items-center gap-2 rounded-lg bg-[var(--accent-primary)]/10 px-3 py-2">
-              <svg
-                width="14"
-                height="14"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="var(--accent-primary)"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <path d="M20 6L9 17l-5-5" />
-              </svg>
-              <span className="text-xs text-[var(--text-secondary)]">
-                캘린더에서 불러옴 &middot; 참석자{" "}
-                {importedParticipants.length}명
-              </span>
+        ) : meetings.length === 0 ? (
+          <div className="empty-state">
+            아직 생성된 미팅이 없습니다.<br />
+            상단의 &ldquo;새 미팅&rdquo; 버튼으로 첫 미팅을 만들어 보세요.
+          </div>
+        ) : (
+          <div className="flex flex-col gap-3">
+            {meetings.map((meeting) => (
               <button
+                className="meeting-row text-left"
+                key={meeting.id}
+                onClick={() => router.push(`/meetings/${meeting.id}`)}
                 type="button"
-                className="ml-auto text-[10px] text-[var(--text-tertiary)] hover:underline"
-                onClick={clearImport}
               >
-                초기화
+                <div className="flex flex-col gap-3">
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div className="space-y-1">
+                      <h3 className="text-[15px] font-semibold text-[var(--text-primary)]">
+                        {meeting.title}
+                      </h3>
+                      <p className="text-xs text-[var(--text-tertiary)]">
+                        {formatDate(meeting.created_at)}
+                      </p>
+                    </div>
+                    <div className="status-pill">
+                      {meeting.briefing_ready_count}/{meeting.briefing_total_count} 브리핑
+                    </div>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {meeting.participant_roles.map((role) => {
+                      const theme = resolveRoleTheme(role);
+                      return (
+                        <span
+                          className="role-chip"
+                          key={role}
+                          style={{
+                            background: theme.background,
+                            borderColor: theme.border,
+                            color: theme.text,
+                          }}
+                        >
+                          {role}
+                        </span>
+                      );
+                    })}
+                  </div>
+                </div>
               </button>
-            </div>
-          )}
-
-          <label className="field-group">
-            <span className="field-label">미팅 제목</span>
-            <input
-              className="input-shell"
-              onChange={(event) =>
-                setForm((current) => ({
-                  ...current,
-                  title: event.target.value,
-                }))
-              }
-              placeholder="예: 개인정보 마스킹 정책 정렬"
-              value={form.title}
-            />
-          </label>
-
-          <label className="field-group">
-            <span className="field-label">미팅 설명</span>
-            <textarea
-              className="textarea-shell"
-              onChange={(event) =>
-                setForm((current) => ({
-                  ...current,
-                  description: event.target.value,
-                }))
-              }
-              placeholder="이번 미팅에서 어떤 문제를 정렬해야 하는지 적어 주세요."
-              rows={3}
-              value={form.description}
-            />
-          </label>
-
-          <div className="grid gap-4 md:grid-cols-2">
-            <label className="field-group">
-              <span className="field-label">안건 목록</span>
-              <textarea
-                className="textarea-shell"
-                onChange={(event) =>
-                  setForm((current) => ({
-                    ...current,
-                    agenda: event.target.value,
-                  }))
-                }
-                placeholder={
-                  "한 줄에 하나씩 입력\n예: PII 마스킹 정책\n예: API 응답 필드 정리"
-                }
-                rows={5}
-                value={form.agenda}
-              />
-            </label>
-
-            <label className="field-group">
-              <span className="field-label">참석자 역할</span>
-              <textarea
-                className="textarea-shell"
-                onChange={(event) =>
-                  setForm((current) => ({
-                    ...current,
-                    roles: event.target.value,
-                  }))
-                }
-                placeholder={
-                  "한 줄에 하나씩 입력\n예: PO\n예: BE 개발자\n예: 법무"
-                }
-                rows={5}
-                value={form.roles}
-              />
-            </label>
+            ))}
           </div>
-
-          <label className="field-group">
-            <span className="field-label">배경자료</span>
-            <textarea
-              className="textarea-shell"
-              onChange={(event) =>
-                setForm((current) => ({
-                  ...current,
-                  background: event.target.value,
-                }))
-              }
-              placeholder="회의 전에 공유해야 할 배경 설명이나 현황을 입력해 주세요."
-              rows={5}
-              value={form.background}
-            />
-          </label>
-
-          {error ? <div className="error-banner">{error}</div> : null}
-
-          <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
-            <p className="text-xs text-[var(--text-tertiary)]">
-              저장 직후 상세 화면으로 이동합니다.
-            </p>
-            <button
-              className="button-primary"
-              disabled={submitting}
-              type="submit"
-            >
-              {submitting ? "생성 중..." : "미팅 생성"}
-            </button>
-          </div>
-        </form>
+        )}
       </section>
-    </main>
+    </div>
   );
 }

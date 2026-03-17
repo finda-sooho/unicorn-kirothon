@@ -129,23 +129,23 @@ export function MeetingDetailShell({ meetingId }: { meetingId: string }) {
 
   if (loading) {
     return (
-      <main className="mx-auto flex min-h-screen w-full max-w-6xl flex-col gap-6 px-4 py-8 sm:px-6 lg:px-8 lg:py-12">
+      <div className="flex flex-col gap-6">
         <div className="panel h-64 animate-pulse" />
         <div className="grid gap-6 lg:grid-cols-[0.9fr_1.1fr]">
           <div className="panel h-80 animate-pulse" />
           <div className="panel h-80 animate-pulse" />
         </div>
-      </main>
+      </div>
     );
   }
 
   if (!meeting) {
     return (
-      <main className="mx-auto flex min-h-screen w-full max-w-5xl items-center justify-center px-4 py-12">
+      <div className="flex items-center justify-center py-12">
         <div className="empty-state max-w-xl text-center">
           {error ?? "미팅 정보를 찾을 수 없습니다."}
         </div>
-      </main>
+      </div>
     );
   }
 
@@ -155,7 +155,7 @@ export function MeetingDetailShell({ meetingId }: { meetingId: string }) {
   ).length;
 
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-6xl flex-col gap-6 px-4 py-8 sm:px-6 lg:px-8 lg:py-12">
+    <div className="flex flex-col gap-6">
       {/* Header */}
       <section className="panel">
         <div className="flex flex-col gap-6">
@@ -384,7 +384,7 @@ export function MeetingDetailShell({ meetingId }: { meetingId: string }) {
           )}
         </div>
       </section>
-    </main>
+    </div>
   );
 }
 
