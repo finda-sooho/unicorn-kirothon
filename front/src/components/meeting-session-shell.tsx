@@ -502,11 +502,11 @@ export function MeetingSessionShell({ meetingId }: { meetingId: string }) {
 
   if (loading) {
     return (
-      <main className="mx-auto flex min-h-screen w-full max-w-7xl flex-col gap-6 px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
-        <div className="panel h-32 animate-pulse" />
-        <div className="grid gap-6 lg:grid-cols-[1.25fr_0.75fr]">
-          <div className="panel h-[42rem] animate-pulse" />
-          <div className="panel h-[42rem] animate-pulse" />
+      <main className="mx-auto flex min-h-screen w-full max-w-7xl flex-col gap-4 px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
+        <div className="panel h-28 animate-pulse" />
+        <div className="grid gap-4 lg:grid-cols-[1.25fr_0.75fr]">
+          <div className="panel h-[40rem] animate-pulse" />
+          <div className="panel h-[40rem] animate-pulse" />
         </div>
       </main>
     );
@@ -529,14 +529,23 @@ export function MeetingSessionShell({ meetingId }: { meetingId: string }) {
       : null;
 
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-[1500px] flex-col gap-4 px-4 py-4 sm:px-6 lg:px-8 lg:py-6">
-      <section className="panel sticky top-4 z-20 flex flex-col gap-4">
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div className="space-y-2">
-            <span className="eyebrow">Live Session</span>
-            <h1 className="text-2xl font-semibold tracking-[-0.03em] text-[var(--text-primary)] sm:text-3xl">
-              {session.title}
-            </h1>
+    <main className="mx-auto flex min-h-screen w-full max-w-[1440px] flex-col gap-4 px-4 py-4 sm:px-6 lg:px-8 lg:py-6">
+      {/* Sticky header */}
+      <section className="panel sticky top-4 z-20 flex flex-col gap-3">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div className="flex items-center gap-4">
+            <div>
+              <span className="eyebrow">Live Session</span>
+              <h1 className="text-xl font-bold tracking-[-0.02em] text-[var(--text-primary)] sm:text-2xl">
+                {session.title}
+              </h1>
+            </div>
+            {session.recording_active && (
+              <span className="inline-flex items-center gap-2 text-xs font-medium text-[var(--error)]">
+                <span className="inline-block h-2 w-2 animate-pulse rounded-full bg-[var(--error)]" />
+                REC
+              </span>
+            )}
           </div>
 
           <div className="flex flex-wrap gap-3">
@@ -574,9 +583,9 @@ export function MeetingSessionShell({ meetingId }: { meetingId: string }) {
           ))}
         </div>
 
-        <div className="hidden flex-wrap items-center gap-5 lg:flex">
+        <div className="hidden flex-wrap items-center gap-5 border-t border-[var(--border-soft)] pt-3 lg:flex">
           <label className="slider-control">
-            <span>스크립트 넓이 {scriptPaneRatio}%</span>
+            <span>스크립트 {scriptPaneRatio}%</span>
             <input
               max={75}
               min={45}
@@ -586,7 +595,7 @@ export function MeetingSessionShell({ meetingId }: { meetingId: string }) {
             />
           </label>
           <label className="slider-control">
-            <span>사이드 상단 비중 {sidePaneRatio}%</span>
+            <span>사이드 상단 {sidePaneRatio}%</span>
             <input
               max={68}
               min={32}
@@ -603,6 +612,7 @@ export function MeetingSessionShell({ meetingId }: { meetingId: string }) {
         {error ? <div className="error-banner">{error}</div> : null}
       </section>
 
+      {/* Mobile tabs */}
       <div className="mobile-tabs lg:hidden">
         {[
           { id: "script", label: "스크립트" },
@@ -621,6 +631,7 @@ export function MeetingSessionShell({ meetingId }: { meetingId: string }) {
         ))}
       </div>
 
+      {/* Desktop layout */}
       <section
         className="hidden gap-4 lg:grid"
         style={{
@@ -668,6 +679,7 @@ export function MeetingSessionShell({ meetingId }: { meetingId: string }) {
         </div>
       </section>
 
+      {/* Mobile layout */}
       <section className="grid gap-4 lg:hidden">
         {mobileTab === "script" ? (
           <ScriptPanel
@@ -733,18 +745,18 @@ function ScriptPanel({
   submittingTranscript: boolean;
 }) {
   return (
-    <div className="panel flex min-h-[42rem] flex-col">
-      <div className="flex items-center justify-between gap-3 border-b border-[var(--border-strong)] pb-4">
-        <div>
+    <div className="panel flex min-h-[40rem] flex-col">
+      <div className="flex items-center justify-between gap-3 border-b border-[var(--border-soft)] pb-4">
+        <div className="space-y-1">
           <span className="eyebrow">Transcript</span>
-          <h2 className="section-title mt-2">실시간 스크립트</h2>
+          <h2 className="section-title">실시간 스크립트</h2>
         </div>
         <span className="status-pill">
           {submittingTranscript ? "동기화 중..." : `${deferredSegments.length}개 구간`}
         </span>
       </div>
 
-      <div className="scroll-area mt-4 flex flex-1 flex-col gap-3 pr-1">
+      <div className="scroll-area mt-4 flex flex-1 flex-col gap-3 overflow-y-auto pr-1">
         {deferredSegments.length > 0 ? (
           deferredSegments.map((segment) => {
             const annotation = annotationForSegment(annotations, segment.id);
@@ -773,8 +785,8 @@ function ScriptPanel({
                         <span className="text-sm font-medium text-[var(--text-primary)]">
                           {annotation.title}
                         </span>
-                        <span className="text-xs text-[var(--text-tertiary)]">
-                          개인 맞춤 설명
+                        <span className="text-[10px] uppercase tracking-[0.14em] text-[var(--text-tertiary)]">
+                          맞춤 설명
                         </span>
                       </div>
                     </summary>
@@ -788,7 +800,8 @@ function ScriptPanel({
           })
         ) : (
           <div className="empty-state flex-1">
-            녹음을 시작하거나 수동으로 스크립트를 입력하면 여기에 회의 내용이 쌓입니다.
+            녹음을 시작하거나 수동으로 스크립트를 입력하면<br />
+            여기에 회의 내용이 쌓입니다.
           </div>
         )}
       </div>
@@ -818,13 +831,13 @@ function GuidePanel({
   onDismissTopic: (value: string | null) => void;
 }) {
   return (
-    <div className="panel flex min-h-[18rem] flex-col gap-4">
+    <div className="panel flex min-h-[18rem] flex-col gap-4 overflow-y-auto">
       {visibleTopic ? (
         <div className="offtrack-banner">
           <div className="flex items-start justify-between gap-3">
-            <div className="space-y-2">
+            <div className="space-y-1">
               <span className="eyebrow text-[var(--warning)]">Focus Nudge</span>
-              <h2 className="section-title text-lg">{visibleTopic.title}</h2>
+              <h2 className="section-title">{visibleTopic.title}</h2>
             </div>
             <button
               className="button-ghost text-xs"
@@ -834,13 +847,13 @@ function GuidePanel({
               닫기
             </button>
           </div>
-          <p className="mt-3 text-sm leading-7 text-[var(--text-secondary)]">
+          <p className="mt-2 text-sm leading-7 text-[var(--text-secondary)]">
             {visibleTopic.reason}
           </p>
         </div>
       ) : null}
 
-      <div className="grid gap-4 xl:grid-cols-[0.58fr_0.42fr]">
+      <div className="grid gap-4 xl:grid-cols-[1.2fr_0.8fr]">
         <div className="sub-panel">
           <div className="flex items-center justify-between gap-3">
             <h2 className="section-title">추천 질문</h2>
@@ -870,7 +883,7 @@ function GuidePanel({
 
         <div className="sub-panel">
           <div className="flex items-center justify-between gap-3">
-            <h2 className="section-title">현재 내 프로필</h2>
+            <h2 className="section-title">내 프로필</h2>
             {session.knowledge_profile?.role ? (
               <span
                 className="role-chip"
@@ -886,10 +899,10 @@ function GuidePanel({
           </div>
           <p className="mt-3 text-sm leading-7 text-[var(--text-secondary)]">
             {session.knowledge_profile
-              ? `${session.knowledge_profile.expertise_areas.join(", ") || "전문 분야 미입력"} / 부족한 지식 영역 ${
+              ? `${session.knowledge_profile.expertise_areas.join(", ") || "전문 분야 미입력"} / 부족 영역 ${
                   session.knowledge_profile.knowledge_gaps.join(", ") || "미입력"
                 }`
-              : "아직 저장된 프로필이 없습니다. 하단 설정에서 저장하면 맞춤 보조가 더 정확해집니다."}
+              : "저장된 프로필이 없습니다. 하단에서 저장하면 맞춤 보조가 정확해집니다."}
           </p>
         </div>
       </div>
@@ -963,7 +976,7 @@ function ProfileSettingsPanel({
               }))
             }
             placeholder={"한 줄에 하나씩 입력\n예: API 설계\n예: 장애 대응"}
-            rows={4}
+            rows={3}
             value={profileDraft.expertise}
           />
         </label>
@@ -980,7 +993,7 @@ function ProfileSettingsPanel({
             }))
           }
           placeholder={"한 줄에 하나씩 입력\n예: PII\n예: 보관 정책"}
-          rows={4}
+          rows={3}
           value={profileDraft.gaps}
         />
       </label>
@@ -1086,16 +1099,16 @@ function ChatPanel({
   onSubmitManualTranscript: (event: React.FormEvent<HTMLFormElement>) => Promise<void>;
 }) {
   return (
-    <div className="panel flex min-h-[22rem] flex-col">
-      <div className="flex items-center justify-between gap-3 border-b border-[var(--border-strong)] pb-4">
-        <div>
+    <div className="panel flex min-h-[20rem] flex-col">
+      <div className="flex items-center justify-between gap-3 border-b border-[var(--border-soft)] pb-4">
+        <div className="space-y-1">
           <span className="eyebrow">Chat QA</span>
-          <h2 className="section-title mt-2">실시간 질문</h2>
+          <h2 className="section-title">실시간 질문</h2>
         </div>
         <span className="status-pill">{messages.length}개 메시지</span>
       </div>
 
-      <div className="scroll-area mt-4 flex flex-1 flex-col gap-3 pr-1">
+      <div className="scroll-area mt-4 flex flex-1 flex-col gap-3 overflow-y-auto pr-1">
         {messages.length > 0 ? (
           messages.map((message) => (
             <article className="chat-card" key={message.id}>
@@ -1127,7 +1140,7 @@ function ChatPanel({
         )}
       </div>
 
-      <div className="mt-4 grid gap-4 border-t border-[var(--border-strong)] pt-4">
+      <div className="mt-4 grid gap-4 border-t border-[var(--border-soft)] pt-4">
         <form className="grid gap-3" onSubmit={onSubmitChat}>
           <label className="field-group">
             <span className="field-label">질문 보내기</span>
@@ -1135,7 +1148,7 @@ function ChatPanel({
               className="textarea-shell"
               onChange={(event) => onChangeChatInput(event.target.value)}
               placeholder="예: PII 마스킹이 이 안건에서 왜 중요한가요?"
-              rows={3}
+              rows={2}
               value={chatInput}
             />
           </label>
@@ -1153,7 +1166,7 @@ function ChatPanel({
               className="textarea-shell"
               onChange={(event) => onChangeManualTranscript(event.target.value)}
               placeholder="브라우저 음성인식이 어려우면 회의 발화를 직접 붙여 넣을 수 있습니다."
-              rows={4}
+              rows={3}
               value={manualTranscript}
             />
           </label>

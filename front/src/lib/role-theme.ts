@@ -6,39 +6,39 @@ type RoleTheme = {
 
 const themes: Record<string, RoleTheme> = {
   po: {
-    background: "rgba(45, 38, 64, 0.72)",
-    border: "#b8a9e8",
-    text: "#d5caf6",
+    background: "rgba(124, 58, 237, 0.12)",
+    border: "rgba(167, 139, 250, 0.4)",
+    text: "#c4b5fd",
   },
   be: {
-    background: "rgba(30, 45, 61, 0.78)",
-    border: "#7eb8d8",
-    text: "#d3ecfb",
+    background: "rgba(59, 130, 246, 0.1)",
+    border: "rgba(96, 165, 250, 0.4)",
+    text: "#93c5fd",
   },
   fe: {
-    background: "rgba(30, 51, 50, 0.78)",
-    border: "#6dc8b8",
-    text: "#d4f7ef",
+    background: "rgba(20, 184, 166, 0.1)",
+    border: "rgba(45, 212, 191, 0.4)",
+    text: "#5eead4",
   },
   designer: {
-    background: "rgba(61, 42, 42, 0.78)",
-    border: "#e8a898",
-    text: "#ffe1d6",
+    background: "rgba(244, 63, 94, 0.1)",
+    border: "rgba(251, 113, 133, 0.4)",
+    text: "#fda4af",
   },
   legal: {
-    background: "rgba(42, 45, 53, 0.86)",
-    border: "#a8b0c8",
-    text: "#e0e6f7",
+    background: "rgba(100, 116, 139, 0.12)",
+    border: "rgba(148, 163, 184, 0.4)",
+    text: "#cbd5e1",
   },
   qa: {
-    background: "rgba(42, 51, 37, 0.82)",
-    border: "#a8d88e",
-    text: "#e6f5d6",
+    background: "rgba(34, 197, 94, 0.1)",
+    border: "rgba(74, 222, 128, 0.4)",
+    text: "#86efac",
   },
   default: {
-    background: "rgba(36, 40, 54, 0.84)",
-    border: "#60a5fa",
-    text: "#dcebff",
+    background: "rgba(96, 165, 250, 0.1)",
+    border: "rgba(96, 165, 250, 0.35)",
+    text: "#93c5fd",
   },
 };
 

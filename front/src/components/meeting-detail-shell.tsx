@@ -128,11 +128,11 @@ export function MeetingDetailShell({ meetingId }: { meetingId: string }) {
 
   if (loading) {
     return (
-      <main className="mx-auto flex min-h-screen w-full max-w-6xl flex-col gap-6 px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
-        <div className="panel h-72 animate-pulse" />
+      <main className="mx-auto flex min-h-screen w-full max-w-6xl flex-col gap-6 px-4 py-8 sm:px-6 lg:px-8 lg:py-12">
+        <div className="panel h-64 animate-pulse" />
         <div className="grid gap-6 lg:grid-cols-[0.9fr_1.1fr]">
-          <div className="panel h-96 animate-pulse" />
-          <div className="panel h-96 animate-pulse" />
+          <div className="panel h-80 animate-pulse" />
+          <div className="panel h-80 animate-pulse" />
         </div>
       </main>
     );
@@ -154,17 +154,17 @@ export function MeetingDetailShell({ meetingId }: { meetingId: string }) {
   ).length;
 
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-6xl flex-col gap-6 px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
-      <section className="panel overflow-hidden">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(108,123,242,0.18),transparent_40%),radial-gradient(circle_at_90%_20%,rgba(248,113,113,0.08),transparent_20%)]" />
-        <div className="relative flex flex-col gap-6">
+    <main className="mx-auto flex min-h-screen w-full max-w-6xl flex-col gap-6 px-4 py-8 sm:px-6 lg:px-8 lg:py-12">
+      {/* Header */}
+      <section className="panel">
+        <div className="flex flex-col gap-6">
           <div className="flex flex-wrap items-start justify-between gap-4">
-            <div className="space-y-3">
+            <div className="space-y-2">
               <span className="eyebrow">Meeting Detail</span>
-              <h1 className="text-3xl font-semibold tracking-[-0.03em] text-[var(--text-primary)] sm:text-4xl">
+              <h1 className="text-2xl font-bold tracking-[-0.03em] text-[var(--text-primary)] sm:text-3xl">
                 {meeting.title}
               </h1>
-              <p className="max-w-3xl text-sm leading-7 text-[var(--text-secondary)] sm:text-base">
+              <p className="max-w-2xl text-sm leading-7 text-[var(--text-secondary)]">
                 {meeting.description || "설명이 아직 입력되지 않았습니다."}
               </p>
             </div>
@@ -187,7 +187,7 @@ export function MeetingDetailShell({ meetingId }: { meetingId: string }) {
             </div>
           </div>
 
-          <div className="grid gap-4 md:grid-cols-3">
+          <div className="grid gap-4 sm:grid-cols-3">
             <div className="metric-card">
               <span className="metric-value">{meeting.participant_roles.length}</span>
               <span className="metric-label">참석자 역할</span>
@@ -204,7 +204,7 @@ export function MeetingDetailShell({ meetingId }: { meetingId: string }) {
             </div>
           </div>
 
-          <div className="grid gap-4 lg:grid-cols-[0.62fr_0.38fr]">
+          <div className="grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
             <div className="sub-panel">
               <h2 className="section-title">안건</h2>
               <div className="mt-3 flex flex-col gap-2">
@@ -233,6 +233,7 @@ export function MeetingDetailShell({ meetingId }: { meetingId: string }) {
         </div>
       </section>
 
+      {/* Briefings */}
       <section className="grid gap-6 lg:grid-cols-[0.76fr_1.24fr]">
         <div className="panel flex flex-col gap-4">
           <div className="flex items-center justify-between gap-3">
@@ -310,11 +311,12 @@ export function MeetingDetailShell({ meetingId }: { meetingId: string }) {
           </div>
         </div>
 
+        {/* Briefing view */}
         <div className="panel flex flex-col gap-5">
           <div className="flex flex-wrap items-start justify-between gap-3">
-            <div>
+            <div className="space-y-1">
               <span className="eyebrow">Briefing View</span>
-              <h2 className="section-title mt-2 text-2xl">
+              <h2 className="section-title text-xl">
                 {activeRole || "역할 선택"}
               </h2>
             </div>
@@ -337,7 +339,7 @@ export function MeetingDetailShell({ meetingId }: { meetingId: string }) {
           {activeBriefing?.status === "ready" ? (
             <div className="grid gap-4">
               <div className="sub-panel">
-                <h3 className="section-title text-lg">핵심 요약</h3>
+                <h3 className="section-title">핵심 요약</h3>
                 <p className="mt-3 text-sm leading-7 text-[var(--text-secondary)]">
                   {activeBriefing.summary}
                 </p>
@@ -355,7 +357,7 @@ export function MeetingDetailShell({ meetingId }: { meetingId: string }) {
               </div>
 
               <div className="sub-panel">
-                <h3 className="section-title text-lg">관련 용어 설명</h3>
+                <h3 className="section-title">관련 용어 설명</h3>
                 <div className="mt-3 grid gap-3 md:grid-cols-2">
                   {activeBriefing.glossary.length > 0 ? (
                     activeBriefing.glossary.map((item) => (
@@ -394,7 +396,7 @@ function BriefingListCard({
 }) {
   return (
     <div className="sub-panel">
-      <h3 className="section-title text-lg">{title}</h3>
+      <h3 className="section-title">{title}</h3>
       <div className="mt-3 flex flex-col gap-2">
         {items.map((item) => (
           <div className="info-row" key={item}>
