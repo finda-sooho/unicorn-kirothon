@@ -8,6 +8,7 @@ from fastapi.responses import JSONResponse, StreamingResponse
 from models import (
     ApiError,
     Briefing,
+    ChatMessage,
     ChatRequest,
     KnowledgeProfile,
     KnowledgeProfileInput,

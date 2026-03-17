@@ -68,10 +68,24 @@ export function DashboardShell() {
   return (
     <div className="flex flex-col gap-8">
       {/* Header */}
+<<<<<<< Updated upstream
       <header className="flex items-center justify-between gap-4">
         <h1 className="text-xl font-bold tracking-[-0.02em] text-[var(--text-primary)]">
           대시보드
         </h1>
+=======
+      <header className="flex items-start justify-between gap-4">
+        <div className="flex flex-col gap-2">
+          <span className="eyebrow">Meeting Alignment AI</span>
+          <h1 className="max-w-2xl text-3xl font-bold tracking-[-0.03em] text-[var(--text-primary)] sm:text-4xl lg:text-5xl">
+            모두가 같은 페이지에 있는 회의.
+          </h1>
+          <p className="max-w-xl text-sm leading-7 text-[var(--text-secondary)] sm:text-base">
+            미팅 주제와 역할만 입력하면 역할별 브리핑, 회의 중 실시간 Q&A, 개인
+            맞춤 보조설명까지 한 흐름으로 연결됩니다.
+          </p>
+        </div>
+>>>>>>> Stashed changes
         <button
           className="button-primary shrink-0"
           onClick={() => router.push("/meetings/new")}

@@ -91,6 +91,50 @@ export function askQuestion(meetingId: string, payload: AskQuestionPayload) {
   });
 }
 
+export async function askQuestionStream(
+  meetingId: string,
+  payload: AskQuestionPayload,
+  onChunk: (text: string) => void,
+): Promise<void> {
+  const response = await fetch(`${API_BASE_URL}/api/meetings/${meetingId}/chat/stream`, {
+    method: "POST",
+    cache: "no-store",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) {
+    let message = "답변을 생성할 수 없습니다.";
+    try {
+      const err = (await response.json()) as ApiErrorResponse;
+      if (err.message) message = err.message;
+    } catch { /* ignore */ }
+    throw new Error(message);
+  }
+
+  const reader = response.body?.getReader();
+  if (!reader) throw new Error("스트림을 읽을 수 없습니다.");
+
+  const decoder = new TextDecoder();
+  let buffer = "";
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+
+    const lines = buffer.split("\n");
+    buffer = lines.pop() ?? "";
+
+    for (const line of lines) {
+      if (!line.startsWith("data: ")) continue;
+      const data = line.slice(6);
+      if (data === "[DONE]") return;
+      onChunk(data);
+    }
+  }
+}
+
 export function startRecording(meetingId: string) {
   return request<RecordingState>(`/api/meetings/${meetingId}/recording/start`, {
     method: "POST",

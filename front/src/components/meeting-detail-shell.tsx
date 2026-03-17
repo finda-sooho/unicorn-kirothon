@@ -108,9 +108,18 @@ export function MeetingDetailShell({ meetingId }: { meetingId: string }) {
 
   if (loading) {
     return (
+<<<<<<< Updated upstream
       <div className="flex flex-col gap-5">
         <div className="panel h-20 animate-pulse" />
         <div className="panel h-64 animate-pulse" />
+=======
+      <div className="flex flex-col gap-6">
+        <div className="panel h-64 animate-pulse" />
+        <div className="grid gap-6 lg:grid-cols-[0.9fr_1.1fr]">
+          <div className="panel h-80 animate-pulse" />
+          <div className="panel h-80 animate-pulse" />
+        </div>
+>>>>>>> Stashed changes
       </div>
     );
   }
@@ -118,7 +127,11 @@ export function MeetingDetailShell({ meetingId }: { meetingId: string }) {
   if (!meeting) {
     return (
       <div className="flex items-center justify-center py-12">
+<<<<<<< Updated upstream
         <div className="empty-state max-w-md text-center">
+=======
+        <div className="empty-state max-w-xl text-center">
+>>>>>>> Stashed changes
           {error ?? "미팅 정보를 찾을 수 없습니다."}
         </div>
       </div>
@@ -129,7 +142,11 @@ export function MeetingDetailShell({ meetingId }: { meetingId: string }) {
   const readyCount = meeting.briefings.filter((b) => b.status === "ready").length;
 
   return (
+<<<<<<< Updated upstream
     <div className="flex flex-col gap-5">
+=======
+    <div className="flex flex-col gap-6">
+>>>>>>> Stashed changes
       {/* Header */}
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="space-y-1">

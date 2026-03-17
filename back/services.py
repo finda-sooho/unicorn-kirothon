@@ -285,6 +285,56 @@ def related_context(meeting: Meeting) -> str:
     return recent_segments or meeting_focus_sentence(meeting)
 
 
+def stream_chat_answer(meeting: Meeting, profile: KnowledgeProfile, question: str):
+    """Yield text chunks for a streaming chat answer."""
+    if openai_content_service.enabled and openai_content_service.client:
+        try:
+            import json as _json
+            system_prompt = (
+                "You answer live meeting questions in Korean. "
+                "Adapt the explanation to the attendee's role, expertise, and knowledge gaps. "
+                "Answer in 3 short paragraphs separated by blank lines: core explanation, role-specific impact, current meeting context. "
+                "When useful, add one extra sentence for the attendee's stated knowledge gap."
+            )
+            user_payload = {
+                "meeting": {
+                    "title": meeting.title,
+                    "description": meeting.description,
+                    "agenda_items": meeting.agenda_items,
+                    "background_material": meeting.background_material,
+                    "recent_transcript": [
+                        {"speaker": s.speaker, "text": s.text}
+                        for s in meeting.transcript_segments[-4:]
+                    ],
+                },
+                "attendee_profile": {
+                    "role": profile.role,
+                    "expertise_areas": profile.expertise_areas,
+                    "knowledge_gaps": profile.knowledge_gaps,
+                },
+                "question": question,
+            }
+            stream = openai_content_service.client.chat.completions.create(
+                model=openai_content_service.model,
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": _json.dumps(user_payload, ensure_ascii=False)},
+                ],
+                stream=True,
+            )
+            for chunk in stream:
+                delta = chunk.choices[0].delta if chunk.choices else None
+                if delta and delta.content:
+                    yield delta.content
+            return
+        except Exception:
+            pass
+
+    # Fallback: yield full answer at once
+    answer = build_chat_answer(meeting, profile, question)
+    yield answer
+
+
 def build_chat_answer(meeting: Meeting, profile: KnowledgeProfile, question: str) -> str:
     if openai_content_service.enabled:
         try:
