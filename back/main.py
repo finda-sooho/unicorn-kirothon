@@ -188,6 +188,26 @@ def generate_meeting_briefings(meeting_id: str) -> MeetingDetailResponse:
     return store.transaction(handler)
 
 
+@app.post("/api/meetings/{meeting_id}/briefings/{role}/generate", response_model=Briefing)
+def generate_single_briefing(meeting_id: str, role: str) -> Briefing:
+    def handler(state):
+        meeting = get_meeting_or_404(state.meetings, meeting_id)
+        if role not in meeting.participant_roles:
+            raise HTTPException(status_code=404, detail="해당 역할을 찾을 수 없습니다")
+        try:
+            from services import build_briefing
+            briefing = build_briefing(meeting, role)
+            meeting.briefings[role] = briefing
+            return briefing
+        except Exception as exc:
+            raise HTTPException(
+                status_code=500,
+                detail=f"'{role}' 브리핑 생성에 실패했습니다.",
+            ) from exc
+
+    return store.transaction(handler)
+
+
 @app.get("/api/meetings/{meeting_id}/session", response_model=SessionStateResponse)
 def get_session_state(
     meeting_id: str,
