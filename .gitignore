@@ -1,0 +1,11 @@
+.idea/
+.idea/.gitignore
+.DS_Store
+*.pyc
+__pycache__/
+.venv/
+.env
+.env.*
+!.env.example
+back/.env
+back/data/

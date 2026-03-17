@@ -1,0 +1,107 @@
+import type {
+  ApiErrorResponse,
+  AppendTranscriptPayload,
+  AskQuestionPayload,
+  CreateMeetingPayload,
+  KnowledgeProfile,
+  MeetingDetail,
+  MeetingSummary,
+  RecordingState,
+  SaveProfilePayload,
+  SessionState,
+} from "@/lib/types";
+
+const API_BASE_URL =
+  process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://127.0.0.1:8000";
+
+async function request<T>(path: string, init?: RequestInit): Promise<T> {
+  const response = await fetch(`${API_BASE_URL}${path}`, {
+    ...init,
+    cache: "no-store",
+    headers: {
+      "Content-Type": "application/json",
+      ...(init?.headers ?? {}),
+    },
+  });
+
+  if (!response.ok) {
+    let message = "요청 처리에 실패했습니다.";
+
+    try {
+      const payload = (await response.json()) as ApiErrorResponse;
+      if (payload.message) {
+        message = payload.message;
+      }
+    } catch {
+      message = response.statusText || message;
+    }
+
+    throw new Error(message);
+  }
+
+  return (await response.json()) as T;
+}
+
+export function listMeetings() {
+  return request<MeetingSummary[]>("/api/meetings");
+}
+
+export function createMeeting(payload: CreateMeetingPayload) {
+  return request<MeetingDetail>("/api/meetings", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export function getMeeting(meetingId: string) {
+  return request<MeetingDetail>(`/api/meetings/${meetingId}`);
+}
+
+export function generateBriefings(meetingId: string) {
+  return request<MeetingDetail>(`/api/meetings/${meetingId}/briefings/generate`, {
+    method: "POST",
+  });
+}
+
+export function saveProfile(meetingId: string, payload: SaveProfilePayload) {
+  return request<KnowledgeProfile>(`/api/meetings/${meetingId}/profiles`, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export function getSessionState(meetingId: string, attendeeId?: string) {
+  const search = attendeeId
+    ? `?attendee_id=${encodeURIComponent(attendeeId)}`
+    : "";
+  return request<SessionState>(`/api/meetings/${meetingId}/session${search}`);
+}
+
+export function askQuestion(meetingId: string, payload: AskQuestionPayload) {
+  return request<SessionState>(`/api/meetings/${meetingId}/chat`, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export function startRecording(meetingId: string) {
+  return request<RecordingState>(`/api/meetings/${meetingId}/recording/start`, {
+    method: "POST",
+  });
+}
+
+export function stopRecording(meetingId: string) {
+  return request<RecordingState>(`/api/meetings/${meetingId}/recording/stop`, {
+    method: "POST",
+  });
+}
+
+export function appendTranscript(
+  meetingId: string,
+  payload: AppendTranscriptPayload,
+) {
+  return request<SessionState>(`/api/meetings/${meetingId}/transcript`, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
