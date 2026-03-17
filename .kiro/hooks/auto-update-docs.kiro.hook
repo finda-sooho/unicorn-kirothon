@@ -1,0 +1,15 @@
+{
+  "enabled": false,
+  "name": "MD 문서 자동 업데이트",
+  "description": "코드 파일이 수정되면, 관련 마크다운 문서(*.md, 요구사항 등)에 반영이 필요한 변경사항이 있는지 확인하고, 필요 시 관련 문서를 자동으로 업데이트하라",
+  "version": "1",
+  "when": {
+    "type": "agentStop"
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "방금 수정된 코드 파일의 변경 내용을 확인하고, 프로젝트 내 관련 마크다운 문서(README.md, .kiro/specs/ 하위 md 파일 등)에 업데이트가 필요한 부분이 있는지 분석하세요. 변경된 코드가 API 엔드포인트, 데이터 모델, 주요 기능, 설정 방법 등 문서에 기술된 내용에 영향을 주는 경우에만 해당 md 파일을 업데이트하세요. 단순 리팩토링이나 문서와 무관한 변경은 무시하세요."
+  },
+  "workspaceFolderName": "unicorn-kirothon",
+  "shortName": "auto-update-docs"
+}
