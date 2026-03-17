@@ -568,6 +568,12 @@ button {
   gap: 6px;
 }
 
+@media (min-width: 1024px) {
+  .mobile-tabs {
+    display: none !important;
+  }
+}
+
 .mobile-tab {
   border-radius: 10px;
   border: 1px solid var(--border-soft);

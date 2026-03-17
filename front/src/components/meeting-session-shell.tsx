@@ -110,8 +110,6 @@ export function MeetingSessionShell({ meetingId }: { meetingId: string }) {
   const [error, setError] = useState<string | null>(null);
   const [microphoneMessage, setMicrophoneMessage] = useState<string | null>(null);
   const [mobileTab, setMobileTab] = useState<MobileTab>("script");
-  const [scriptPaneRatio, setScriptPaneRatio] = useState(62);
-  const [sidePaneRatio, setSidePaneRatio] = useState(44);
   const [dismissedTopicAt, setDismissedTopicAt] = useState<string | null>(null);
 
   const attendeeIdRef = useRef("");
@@ -402,11 +400,11 @@ export function MeetingSessionShell({ meetingId }: { meetingId: string }) {
 
   if (loading) {
     return (
-      <main className="mx-auto flex min-h-screen w-full max-w-7xl flex-col gap-4 px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
-        <div className="panel h-28 animate-pulse" />
-        <div className="grid gap-4 lg:grid-cols-[1.25fr_0.75fr]">
-          <div className="panel h-[40rem] animate-pulse" />
-          <div className="panel h-[40rem] animate-pulse" />
+      <main className="mx-auto flex min-h-screen w-full max-w-[1440px] flex-col gap-3 px-4 py-3 sm:px-6 lg:px-8">
+        <div className="panel h-20 animate-pulse" />
+        <div className="grid gap-3 lg:grid-cols-[1.2fr_0.8fr]">
+          <div className="panel h-[36rem] animate-pulse" />
+          <div className="panel h-[36rem] animate-pulse" />
         </div>
       </main>
     );
@@ -429,26 +427,26 @@ export function MeetingSessionShell({ meetingId }: { meetingId: string }) {
       : null;
 
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-[1440px] flex-col gap-4 px-4 py-4 sm:px-6 lg:px-8 lg:py-6">
-      {/* Sticky header */}
-      <section className="panel sticky top-4 z-20 flex flex-col gap-3">
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <div className="flex items-center gap-4">
+    <main className="mx-auto flex min-h-screen w-full max-w-[1440px] flex-col gap-3 px-4 py-3 sm:px-6 lg:px-8">
+      {/* Compact header */}
+      <section className="panel z-20 flex shrink-0 flex-col gap-2">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
             <div>
               <span className="eyebrow">Live Session</span>
-              <h1 className="text-xl font-bold tracking-[-0.02em] text-[var(--text-primary)] sm:text-2xl">
+              <h1 className="text-lg font-bold tracking-[-0.02em] text-[var(--text-primary)] sm:text-xl">
                 {session.title}
               </h1>
             </div>
             {session.recording_active && (
-              <span className="inline-flex items-center gap-2 text-xs font-medium text-[var(--error)]">
+              <span className="inline-flex items-center gap-1.5 text-xs font-medium text-[var(--error)]">
                 <span className="inline-block h-2 w-2 animate-pulse rounded-full bg-[var(--error)]" />
                 REC
               </span>
             )}
           </div>
 
-          <div className="flex flex-wrap gap-3">
+          <div className="flex flex-wrap gap-2">
             <button
               className="button-secondary"
               onClick={() => router.push(`/meetings/${meeting.id}`)}
@@ -475,36 +473,15 @@ export function MeetingSessionShell({ meetingId }: { meetingId: string }) {
           </div>
         </div>
 
-        <div className="flex flex-wrap gap-2">
-          {session.agenda_items.map((item) => (
-            <span className="agenda-pill" key={item}>
-              {item}
-            </span>
-          ))}
-        </div>
-
-        <div className="hidden flex-wrap items-center gap-5 border-t border-[var(--border-soft)] pt-3 lg:flex">
-          <label className="slider-control">
-            <span>스크립트 {scriptPaneRatio}%</span>
-            <input
-              max={75}
-              min={45}
-              onChange={(event) => setScriptPaneRatio(Number(event.target.value))}
-              type="range"
-              value={scriptPaneRatio}
-            />
-          </label>
-          <label className="slider-control">
-            <span>사이드 상단 {sidePaneRatio}%</span>
-            <input
-              max={68}
-              min={32}
-              onChange={(event) => setSidePaneRatio(Number(event.target.value))}
-              type="range"
-              value={sidePaneRatio}
-            />
-          </label>
-        </div>
+        {session.agenda_items.length > 0 && (
+          <div className="flex flex-wrap gap-1.5">
+            {session.agenda_items.map((item) => (
+              <span className="agenda-pill" key={item}>
+                {item}
+              </span>
+            ))}
+          </div>
+        )}
 
         {microphoneMessage ? (
           <div className="warning-banner">{microphoneMessage}</div>
@@ -532,24 +509,14 @@ export function MeetingSessionShell({ meetingId }: { meetingId: string }) {
       </div>
 
       {/* Desktop layout */}
-      <section
-        className="hidden gap-4 lg:grid"
-        style={{
-          gridTemplateColumns: `minmax(0, ${scriptPaneRatio}fr) minmax(320px, ${100 - scriptPaneRatio}fr)`,
-        }}
-      >
+      <section className="hidden gap-3 lg:grid lg:grid-cols-[1.2fr_0.8fr]">
         <ScriptPanel
           annotations={session.annotations}
           deferredSegments={deferredSegments}
           submittingTranscript={submittingTranscript}
         />
 
-        <div
-          className="grid gap-4"
-          style={{
-            gridTemplateRows: `minmax(260px, ${sidePaneRatio}fr) minmax(300px, ${100 - sidePaneRatio}fr)`,
-          }}
-        >
+        <div className="flex flex-col gap-3">
           <GuidePanel
             onDismissTopic={setDismissedTopicAt}
             onPickQuestion={(question) => {
@@ -580,7 +547,7 @@ export function MeetingSessionShell({ meetingId }: { meetingId: string }) {
       </section>
 
       {/* Mobile layout */}
-      <section className="grid gap-4 lg:hidden">
+      <section className="flex flex-col gap-3 lg:hidden">
         {mobileTab === "script" ? (
           <ScriptPanel
             annotations={session.annotations}
@@ -645,9 +612,9 @@ function ScriptPanel({
   submittingTranscript: boolean;
 }) {
   return (
-    <div className="panel flex min-h-[40rem] flex-col">
-      <div className="flex items-center justify-between gap-3 border-b border-[var(--border-soft)] pb-4">
-        <div className="space-y-1">
+    <div className="panel flex h-[calc(100vh-10rem)] flex-col overflow-hidden">
+      <div className="flex items-center justify-between gap-3 border-b border-[var(--border-soft)] pb-3">
+        <div className="space-y-0.5">
           <span className="eyebrow">Transcript</span>
           <h2 className="section-title">실시간 스크립트</h2>
         </div>
@@ -656,7 +623,7 @@ function ScriptPanel({
         </span>
       </div>
 
-      <div className="scroll-area mt-4 flex flex-1 flex-col gap-3 overflow-y-auto pr-1">
+      <div className="scroll-area mt-3 flex flex-1 flex-col gap-2 overflow-y-auto pr-1">
         {deferredSegments.length > 0 ? (
           deferredSegments.map((segment) => {
             const annotation = annotationForSegment(annotations, segment.id);
@@ -731,7 +698,7 @@ function GuidePanel({
   onDismissTopic: (value: string | null) => void;
 }) {
   return (
-    <div className="panel flex min-h-[18rem] flex-col gap-4 overflow-y-auto">
+    <div className="panel flex flex-col gap-3 overflow-y-auto">
       {visibleTopic ? (
         <div className="offtrack-banner">
           <div className="flex items-start justify-between gap-3">
@@ -999,16 +966,16 @@ function ChatPanel({
   onSubmitManualTranscript: (event: React.FormEvent<HTMLFormElement>) => Promise<void>;
 }) {
   return (
-    <div className="panel flex min-h-[20rem] flex-col">
-      <div className="flex items-center justify-between gap-3 border-b border-[var(--border-soft)] pb-4">
-        <div className="space-y-1">
+    <div className="panel flex flex-col">
+      <div className="flex items-center justify-between gap-3 border-b border-[var(--border-soft)] pb-3">
+        <div className="space-y-0.5">
           <span className="eyebrow">Chat QA</span>
           <h2 className="section-title">실시간 질문</h2>
         </div>
         <span className="status-pill">{messages.length}개 메시지</span>
       </div>
 
-      <div className="scroll-area mt-4 flex flex-1 flex-col gap-3 overflow-y-auto pr-1">
+      <div className="scroll-area mt-3 flex flex-1 flex-col gap-2 overflow-y-auto pr-1">
         {messages.length > 0 ? (
           messages.map((message) => (
             <article className="chat-card" key={message.id}>
@@ -1040,8 +1007,8 @@ function ChatPanel({
         )}
       </div>
 
-      <div className="mt-4 grid gap-4 border-t border-[var(--border-soft)] pt-4">
-        <form className="grid gap-3" onSubmit={onSubmitChat}>
+      <div className="mt-3 grid gap-3 border-t border-[var(--border-soft)] pt-3">
+        <form className="grid gap-2" onSubmit={onSubmitChat}>
           <label className="field-group">
             <span className="field-label">질문 보내기</span>
             <textarea
@@ -1059,7 +1026,7 @@ function ChatPanel({
           </div>
         </form>
 
-        <form className="grid gap-3" onSubmit={onSubmitManualTranscript}>
+        <form className="grid gap-2" onSubmit={onSubmitManualTranscript}>
           <label className="field-group">
             <span className="field-label">수동 스크립트 입력</span>
             <textarea
