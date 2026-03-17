@@ -51,7 +51,13 @@ class OpenAIContentService:
     def __init__(self) -> None:
         self.model = os.getenv("OPENAI_MODEL", "gpt-5-mini-2025-08-07")
         self.enabled = bool(os.getenv("OPENAI_API_KEY")) and os.getenv("MEETING_ASSIST_DISABLE_LLM") != "1"
-        self.client = OpenAI() if self.enabled else None
+        self.timeout = float(os.getenv("OPENAI_TIMEOUT_SECONDS", "15"))
+        self.max_retries = int(os.getenv("OPENAI_MAX_RETRIES", "0"))
+        self.client = (
+            OpenAI(timeout=self.timeout, max_retries=self.max_retries)
+            if self.enabled
+            else None
+        )
 
     def _parse(self, output_type, system_prompt: str, user_payload: dict[str, object]):
         if not self.client:

@@ -11,6 +11,7 @@ os.environ["MEETING_ASSIST_DISABLE_LLM"] = "1"
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 import main
+import services
 from models import Meeting
 from storage import JsonStore
 
@@ -93,6 +94,58 @@ def test_profile_briefing_and_session_flow(tmp_path) -> None:
     latest_answer = chat_response.json()["chat_messages"][-1]["answer"]
     assert "BE 개발자 관점" in latest_answer
     assert "현재 회의 맥락" in latest_answer
+
+
+def test_profile_save_does_not_call_llm_for_historical_segments(tmp_path, monkeypatch) -> None:
+    client = make_client(tmp_path)
+    meeting = client.post(
+        "/api/meetings",
+        json={
+            "title": "히스토리 재생성",
+            "description": "프로필 저장 속도 테스트",
+            "agenda_items": ["보안 정책"],
+            "background_material": "배경",
+            "participant_roles": ["BE 개발자"],
+        },
+    ).json()
+
+    transcript_response = client.post(
+        f"/api/meetings/{meeting['id']}/transcript",
+        json={
+            "text": "이번 논의에서는 PII retention 기준과 masking 범위를 정리합니다.",
+            "speaker": "PO",
+            "source": "manual",
+        },
+    )
+    assert transcript_response.status_code == 200
+
+    def fail_if_called(*args, **kwargs):
+        raise AssertionError("historical profile rebuild should not call OpenAI")
+
+    monkeypatch.setattr(
+        services.openai_content_service,
+        "generate_session_assist",
+        fail_if_called,
+    )
+
+    profile_response = client.post(
+        f"/api/meetings/{meeting['id']}/profiles",
+        json={
+            "attendee_id": "attendee-fast",
+            "role": "BE 개발자",
+            "expertise_areas": ["API"],
+            "knowledge_gaps": ["PII"],
+            "custom_fields": [],
+        },
+    )
+
+    assert profile_response.status_code == 200
+    session_response = client.get(
+        f"/api/meetings/{meeting['id']}/session",
+        params={"attendee_id": "attendee-fast"},
+    )
+    assert session_response.status_code == 200
+    assert len(session_response.json()["annotations"]) == 1
 
 
 def test_pydantic_roundtrip_preserves_meeting() -> None:

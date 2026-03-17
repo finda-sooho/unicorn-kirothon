@@ -409,8 +409,10 @@ def build_session_assist(
     meeting: Meeting,
     profile: KnowledgeProfile,
     segment: TranscriptSegment,
+    *,
+    use_llm: bool = True,
 ) -> tuple[Annotation | None, SessionRecommendations]:
-    if openai_content_service.enabled:
+    if use_llm and openai_content_service.enabled:
         try:
             draft = openai_content_service.generate_session_assist(meeting, profile, segment)
             annotation: Annotation | None = None
@@ -459,7 +461,7 @@ def build_session_assist(
 
 def update_session_artifacts(meeting: Meeting, segment: TranscriptSegment) -> None:
     for profile in meeting.profiles.values():
-        annotation, recommendations = build_session_assist(meeting, profile, segment)
+        annotation, recommendations = build_session_assist(meeting, profile, segment, use_llm=True)
         if annotation:
             already_exists = any(
                 item.attendee_id == annotation.attendee_id and item.segment_id == annotation.segment_id
@@ -479,7 +481,13 @@ def rebuild_profile_artifacts(meeting: Meeting, profile: KnowledgeProfile) -> No
 
     latest_segment: TranscriptSegment | None = None
     for segment in meeting.transcript_segments:
-        annotation, recommendations = build_session_assist(meeting, profile, segment)
+        # Historical transcript hydration runs on profile save, so keep it fast and local.
+        annotation, recommendations = build_session_assist(
+            meeting,
+            profile,
+            segment,
+            use_llm=False,
+        )
         if annotation:
             meeting.annotations.append(annotation)
         meeting.recommendations[profile.attendee_id] = recommendations
