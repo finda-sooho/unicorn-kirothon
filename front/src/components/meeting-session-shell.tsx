@@ -415,7 +415,7 @@ export function MeetingSessionShell({ meetingId }: { meetingId: string }) {
 
   if (loading) {
     return (
-      <div className="flex flex-col gap-4">
+      <div className="full-width flex flex-col gap-4">
         <div className="panel h-28 animate-pulse" />
         <div className="grid gap-4 lg:grid-cols-[1.25fr_0.75fr]">
           <div className="panel h-[40rem] animate-pulse" />
@@ -427,7 +427,7 @@ export function MeetingSessionShell({ meetingId }: { meetingId: string }) {
 
   if (!meeting || !session) {
     return (
-      <div className="flex items-center justify-center py-12">
+      <div className="full-width flex items-center justify-center py-12">
         <div className="empty-state max-w-xl text-center">
           {error ?? "세션 정보를 불러오지 못했습니다."}
         </div>
@@ -442,7 +442,7 @@ export function MeetingSessionShell({ meetingId }: { meetingId: string }) {
       : null;
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="full-width flex flex-col gap-4">
       {/* Sticky header */}
       <section className="panel sticky top-4 z-20 flex flex-col gap-3">
         <div className="flex flex-wrap items-center justify-between gap-4">
