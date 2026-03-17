@@ -141,7 +141,7 @@ export function CreateMeetingShell() {
     try {
       setSubmitting(true);
       const created = await createMeeting(payload);
-      router.push(`/meetings/${created.id}`);
+      router.push(`/meetings/${created.id}/session`);
     } catch (cause) {
       setError(
         cause instanceof Error

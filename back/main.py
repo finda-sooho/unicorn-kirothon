@@ -3,7 +3,7 @@ from __future__ import annotations
 from fastapi import FastAPI, HTTPException, Query, status
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, StreamingResponse
 
 from models import (
     ApiError,
@@ -25,6 +25,7 @@ from services import (
     build_chat_message,
     generate_briefings,
     rebuild_profile_artifacts,
+    stream_chat_answer,
     update_session_artifacts,
 )
 from storage import JsonStore
@@ -239,6 +240,42 @@ def ask_chat_question(meeting_id: str, payload: ChatRequest) -> SessionStateResp
     return store.transaction(handler)
 
 
+@app.post("/api/meetings/{meeting_id}/chat/stream")
+def stream_chat_question(meeting_id: str, payload: ChatRequest) -> StreamingResponse:
+    state = store.load()
+    meeting = get_meeting_or_404(state.meetings, meeting_id)
+    profile = meeting.profiles.get(payload.attendee_id)
+    if not profile:
+        raise HTTPException(status_code=400, detail="지식 프로필을 먼저 저장해 주세요")
+
+    def event_stream():
+        full_answer = ""
+        for chunk in stream_chat_answer(meeting, profile, payload.question):
+            full_answer += chunk
+            yield f"data: {chunk}\n\n"
+        yield "data: [DONE]\n\n"
+
+        # Save the complete message
+        message = ChatMessage(
+            attendee_id=profile.attendee_id,
+            role=profile.role,
+            question=payload.question,
+            answer=full_answer,
+        )
+
+        def save_handler(s):
+            m = get_meeting_or_404(s.meetings, meeting_id)
+            m.chat_messages.append(message)
+
+        store.transaction(save_handler)
+
+    return StreamingResponse(
+        event_stream(),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    )
+
+
 @app.post("/api/meetings/{meeting_id}/recording/start", response_model=RecordingState)
 def start_recording(meeting_id: str) -> RecordingState:
     def handler(state):
@@ -255,6 +292,36 @@ def stop_recording(meeting_id: str) -> RecordingState:
         meeting = get_meeting_or_404(state.meetings, meeting_id)
         meeting.recording_active = False
         return RecordingState(meeting_id=meeting.id, recording_active=False, updated_at=utc_now())
+
+    return store.transaction(handler)
+
+
+@app.post("/api/meetings/{meeting_id}/recommendations/refresh", response_model=SessionStateResponse)
+def refresh_recommendations(
+    meeting_id: str,
+    attendee_id: str = Query(),
+) -> SessionStateResponse:
+    def handler(state):
+        meeting = get_meeting_or_404(state.meetings, meeting_id)
+        profile = meeting.profiles.get(attendee_id)
+        if not profile:
+            raise HTTPException(status_code=400, detail="지식 프로필을 먼저 저장해 주세요")
+
+        if not meeting.transcript_segments:
+            return serialize_session(meeting, attendee_id)
+
+        latest_segment = meeting.transcript_segments[-1]
+        from services import build_session_assist
+        annotation, recommendations = build_session_assist(meeting, profile, latest_segment, use_llm=True)
+        if annotation:
+            already_exists = any(
+                item.attendee_id == annotation.attendee_id and item.segment_id == annotation.segment_id
+                for item in meeting.annotations
+            )
+            if not already_exists:
+                meeting.annotations.append(annotation)
+        meeting.recommendations[profile.attendee_id] = recommendations
+        return serialize_session(meeting, attendee_id)
 
     return store.transaction(handler)
 

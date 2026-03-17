@@ -66,6 +66,12 @@ export function AppSidebar() {
         ))}
       </nav>
 
+      {/* Tagline */}
+      <p className="px-3 pb-3 text-[11px] leading-[1.6] text-[var(--text-tertiary)]">
+        모두가 같은 페이지에 있는 회의.<br />
+        역할별 브리핑, 실시간 Q&A, 맞춤 보조.
+      </p>
+
       {/* User section at bottom */}
       <div className="sidebar-footer">
         {status === "authenticated" && session?.user ? (

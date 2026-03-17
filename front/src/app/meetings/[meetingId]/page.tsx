@@ -1,4 +1,4 @@
-import { MeetingDetailShell } from "@/components/meeting-detail-shell";
+import { redirect } from "next/navigation";
 
 type PageProps = {
   params: Promise<{
@@ -8,5 +8,5 @@ type PageProps = {
 
 export default async function MeetingDetailPage({ params }: PageProps) {
   const { meetingId } = await params;
-  return <MeetingDetailShell meetingId={meetingId} />;
+  redirect(`/meetings/${meetingId}/session`);
 }

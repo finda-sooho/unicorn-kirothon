@@ -103,6 +103,13 @@ export function stopRecording(meetingId: string) {
   });
 }
 
+export function refreshRecommendations(meetingId: string, attendeeId: string) {
+  return request<SessionState>(
+    `/api/meetings/${meetingId}/recommendations/refresh?attendee_id=${encodeURIComponent(attendeeId)}`,
+    { method: "POST" },
+  );
+}
+
 export function appendTranscript(
   meetingId: string,
   payload: AppendTranscriptPayload,
