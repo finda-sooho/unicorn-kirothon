@@ -2,6 +2,7 @@ import type {
   ApiErrorResponse,
   AppendTranscriptPayload,
   AskQuestionPayload,
+  Briefing,
   CreateMeetingPayload,
   KnowledgeProfile,
   MeetingDetail,
@@ -59,6 +60,12 @@ export function getMeeting(meetingId: string) {
 
 export function generateBriefings(meetingId: string) {
   return request<MeetingDetail>(`/api/meetings/${meetingId}/briefings/generate`, {
+    method: "POST",
+  });
+}
+
+export function generateSingleBriefing(meetingId: string, role: string) {
+  return request<Briefing>(`/api/meetings/${meetingId}/briefings/${encodeURIComponent(role)}/generate`, {
     method: "POST",
   });
 }

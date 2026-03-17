@@ -1,10 +1,28 @@
 import type { Metadata } from "next";
-import { Inter, JetBrains_Mono } from "next/font/google";
+import { JetBrains_Mono } from "next/font/google";
+import localFont from "next/font/local";
+import { SessionProvider } from "@/components/session-provider";
 import "./globals.css";
 
-const sans = Inter({
+const happyFont = localFont({
+  src: [
+    {
+      path: "../../public/fonts/Happiness-Sans-Regular.woff2",
+      weight: "400",
+      style: "normal",
+    },
+    {
+      path: "../../public/fonts/Happiness-Sans-Bold.woff2",
+      weight: "700",
+      style: "normal",
+    },
+    {
+      path: "../../public/fonts/Happiness-Sans-Title.woff2",
+      weight: "900",
+      style: "normal",
+    },
+  ],
   variable: "--font-app-sans",
-  subsets: ["latin"],
 });
 
 const mono = JetBrains_Mono({
@@ -24,8 +42,8 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ko">
-      <body className={`${sans.variable} ${mono.variable} antialiased`}>
-        {children}
+      <body className={`${happyFont.variable} ${mono.variable} antialiased`}>
+        <SessionProvider>{children}</SessionProvider>
       </body>
     </html>
   );

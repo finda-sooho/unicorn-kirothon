@@ -3,7 +3,7 @@
 import { startTransition, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
-import { generateBriefings, getMeeting } from "@/lib/api";
+import { generateSingleBriefing, getMeeting } from "@/lib/api";
 import { resolveRoleTheme } from "@/lib/role-theme";
 import type { Briefing, BriefingStatus, MeetingDetail } from "@/lib/types";
 
@@ -100,19 +100,22 @@ export function MeetingDetailShell({ meetingId }: { meetingId: string }) {
     setGenerating(true);
     setGenerationCursor(0);
 
-    const interval = window.setInterval(() => {
-      setGenerationCursor((current) =>
-        Math.min(current + 1, meeting.participant_roles.length),
-      );
-    }, 360);
-
     try {
-      const nextMeeting = await generateBriefings(meetingId);
-      startTransition(() => {
-        setMeeting(nextMeeting);
-        setActiveRole((current) => current || nextMeeting.participant_roles[0] || "");
-        setError(null);
-      });
+      for (let i = 0; i < meeting.participant_roles.length; i++) {
+        const role = meeting.participant_roles[i];
+        const briefing = await generateSingleBriefing(meetingId, role);
+        startTransition(() => {
+          setMeeting((prev) => {
+            if (!prev) return prev;
+            const nextBriefings = prev.briefings.map((b) =>
+              b.role === role ? briefing : b,
+            );
+            return { ...prev, briefings: nextBriefings };
+          });
+          setGenerationCursor(i + 1);
+        });
+      }
+      setError(null);
     } catch (cause) {
       setError(
         cause instanceof Error
@@ -120,9 +123,7 @@ export function MeetingDetailShell({ meetingId }: { meetingId: string }) {
           : "브리핑 생성에 실패했습니다. 다시 시도해 주세요.",
       );
     } finally {
-      window.clearInterval(interval);
       setGenerating(false);
-      setGenerationCursor(meeting.participant_roles.length);
     }
   }
 
@@ -272,7 +273,7 @@ export function MeetingDetailShell({ meetingId }: { meetingId: string }) {
               const briefing = findBriefing(meeting, role);
               const visualStatus: BriefingStatus | "queued" = generating
                 ? index < generationCursor
-                  ? "ready"
+                  ? briefing?.status ?? "ready"
                   : index === generationCursor
                     ? "generating"
                     : "queued"

@@ -2,6 +2,7 @@
 
 import {
   startTransition,
+  useCallback,
   useDeferredValue,
   useEffect,
   useEffectEvent,
@@ -19,6 +20,8 @@ import {
   startRecording,
   stopRecording,
 } from "@/lib/api";
+import { useDeepgramSTT, type DeepgramTranscriptEvent } from "@/lib/audio/use-deepgram-stt";
+import { useAudioRecorder } from "@/lib/audio/use-audio-recorder";
 import { resolveRoleTheme } from "@/lib/role-theme";
 import type {
   Annotation,
@@ -30,32 +33,6 @@ import type {
 } from "@/lib/types";
 
 type MobileTab = "script" | "chat" | "guide" | "settings";
-
-type BrowserRecognitionResult = {
-  isFinal: boolean;
-  length: number;
-  [index: number]: {
-    transcript: string;
-  };
-};
-
-type BrowserRecognitionEvent = Event & {
-  resultIndex: number;
-  results: ArrayLike<BrowserRecognitionResult>;
-};
-
-type BrowserRecognition = {
-  continuous: boolean;
-  interimResults: boolean;
-  lang: string;
-  onend: ((event: Event) => void) | null;
-  onerror: ((event: Event) => void) | null;
-  onresult: ((event: BrowserRecognitionEvent) => void) | null;
-  start(): void;
-  stop(): void;
-};
-
-type BrowserRecognitionCtor = new () => BrowserRecognition;
 
 type ProfileDraft = {
   role: string;
@@ -132,17 +109,13 @@ export function MeetingSessionShell({ meetingId }: { meetingId: string }) {
   const [manualTranscript, setManualTranscript] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [microphoneMessage, setMicrophoneMessage] = useState<string | null>(null);
-  const [speechSupported, setSpeechSupported] = useState(false);
-  const [speechListening, setSpeechListening] = useState(false);
   const [mobileTab, setMobileTab] = useState<MobileTab>("script");
   const [scriptPaneRatio, setScriptPaneRatio] = useState(62);
   const [sidePaneRatio, setSidePaneRatio] = useState(44);
   const [dismissedTopicAt, setDismissedTopicAt] = useState<string | null>(null);
 
   const attendeeIdRef = useRef("");
-  const listeningRef = useRef(false);
   const hydratedProfileRef = useRef(false);
-  const recognitionRef = useRef<BrowserRecognition | null>(null);
   const lastTranscriptAtRef = useRef(0);
 
   const deferredSegments = useDeferredValue(session?.transcript_segments ?? []);
@@ -252,73 +225,27 @@ export function MeetingSessionShell({ meetingId }: { meetingId: string }) {
     hydratedProfileRef.current = true;
   }, [meeting, session]);
 
-  useEffect(() => {
-    listeningRef.current = speechListening;
-  }, [speechListening]);
-
-  useEffect(() => {
-    if (typeof window === "undefined") {
-      return;
-    }
-
-    const Recognition = (
-      window.SpeechRecognition ??
-      window.webkitSpeechRecognition ??
-      null
-    ) as BrowserRecognitionCtor | null;
-
-    if (!Recognition) {
-      setSpeechSupported(false);
-      return;
-    }
-
-    setSpeechSupported(true);
-    const recognition = new Recognition();
-    recognition.lang = "ko-KR";
-    recognition.continuous = true;
-    recognition.interimResults = true;
-
-    recognition.onresult = (event) => {
-      let finalizedText = "";
-
-      for (let index = event.resultIndex; index < event.results.length; index += 1) {
-        const result = event.results[index];
-        if (result.isFinal) {
-          finalizedText += result[0].transcript.trim();
-        }
-      }
-
-      if (finalizedText) {
+  // --- Deepgram STT ---
+  const handleDeepgramTranscript = useCallback(
+    (event: DeepgramTranscriptEvent) => {
+      if (event.type === "final" && event.text.trim()) {
         setMicrophoneMessage(null);
-        void submitTranscriptText(finalizedText, "speech");
+        lastTranscriptAtRef.current = Date.now();
+        void submitTranscriptText(event.text.trim(), "speech");
       }
-    };
+    },
+    [],
+  );
 
-    recognition.onerror = () => {
-      setMicrophoneMessage("마이크 입력을 확인해 주세요");
-    };
+  const { connect: dgConnect, disconnect: dgDisconnect, send: dgSend, isConnected: dgConnected } =
+    useDeepgramSTT({
+      onTranscript: handleDeepgramTranscript,
+      onError: () => setMicrophoneMessage("Deepgram 연결 오류 — 마이크를 확인해 주세요"),
+    });
 
-    recognition.onend = () => {
-      if (listeningRef.current) {
-        try {
-          recognition.start();
-        } catch {
-          // Browsers can throw when rapid restarts overlap.
-        }
-      }
-    };
-
-    recognitionRef.current = recognition;
-
-    return () => {
-      recognitionRef.current = null;
-      try {
-        recognition.stop();
-      } catch {
-        // Ignore teardown failures.
-      }
-    };
-  }, []);
+  const { start: recorderStart, stop: recorderStop } = useAudioRecorder({
+    onAudioChunk: dgSend,
+  });
 
   useEffect(() => {
     if (!attendeeId) {
@@ -331,21 +258,6 @@ export function MeetingSessionShell({ meetingId }: { meetingId: string }) {
 
     return () => window.clearInterval(interval);
   }, [attendeeId, session?.recording_active]);
-
-  useEffect(() => {
-    if (!speechListening) {
-      return;
-    }
-
-    lastTranscriptAtRef.current = Date.now();
-    const timer = window.setTimeout(() => {
-      if (Date.now() - lastTranscriptAtRef.current >= 3800) {
-        setMicrophoneMessage("마이크 입력을 확인해 주세요");
-      }
-    }, 3800);
-
-    return () => window.clearTimeout(timer);
-  }, [speechListening, session?.transcript_segments.length]);
 
   async function handleSaveProfile(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -456,15 +368,10 @@ export function MeetingSessionShell({ meetingId }: { meetingId: string }) {
         );
       });
 
-      if (speechSupported && recognitionRef.current) {
-        listeningRef.current = true;
-        setSpeechListening(true);
-        lastTranscriptAtRef.current = Date.now();
-        setMicrophoneMessage(null);
-        recognitionRef.current.start();
-      } else {
-        setMicrophoneMessage("브라우저 음성인식을 지원하지 않아 수동 스크립트 입력을 사용합니다.");
-      }
+      lastTranscriptAtRef.current = Date.now();
+      setMicrophoneMessage(null);
+      await dgConnect();
+      await recorderStart();
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "녹음을 시작하지 못했습니다.");
     } finally {
@@ -476,17 +383,10 @@ export function MeetingSessionShell({ meetingId }: { meetingId: string }) {
     try {
       setRecordingBusy(true);
       await stopRecording(meetingId);
-      listeningRef.current = false;
-      setSpeechListening(false);
       setMicrophoneMessage(null);
 
-      if (recognitionRef.current) {
-        try {
-          recognitionRef.current.stop();
-        } catch {
-          // Ignore browser stop failures.
-        }
-      }
+      recorderStop();
+      await dgDisconnect();
 
       startTransition(() => {
         setSession((current) =>

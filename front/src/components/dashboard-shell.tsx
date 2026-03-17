@@ -2,10 +2,13 @@
 
 import { startTransition, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useSession, signIn, signOut } from "next-auth/react";
 
 import { createMeeting, listMeetings } from "@/lib/api";
 import { resolveRoleTheme } from "@/lib/role-theme";
 import type { CreateMeetingPayload, MeetingSummary } from "@/lib/types";
+import { CalendarImport } from "@/components/calendar-import";
+import type { CalendarImportResult } from "@/components/calendar-import";
 
 const defaultForm = {
   title: "",
@@ -31,8 +34,12 @@ function formatDate(value: string) {
 
 export function DashboardShell() {
   const router = useRouter();
+  const { data: session, status: authStatus } = useSession();
   const [meetings, setMeetings] = useState<MeetingSummary[]>([]);
   const [form, setForm] = useState(defaultForm);
+  const [importedParticipants, setImportedParticipants] = useState<string[]>(
+    [],
+  );
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -54,7 +61,9 @@ export function DashboardShell() {
       } catch (cause) {
         if (!cancelled) {
           setError(
-            cause instanceof Error ? cause.message : "미팅 목록을 불러오지 못했습니다.",
+            cause instanceof Error
+              ? cause.message
+              : "미팅 목록을 불러오지 못했습니다.",
           );
         }
       } finally {
@@ -80,10 +89,32 @@ export function DashboardShell() {
         setError(null);
       });
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "미팅 목록을 불러오지 못했습니다.");
+      setError(
+        cause instanceof Error
+          ? cause.message
+          : "미팅 목록을 불러오지 못했습니다.",
+      );
     } finally {
       setLoading(false);
     }
+  }
+
+  function handleCalendarImport(result: CalendarImportResult) {
+    setForm((current) => ({
+      ...current,
+      title: result.title,
+      roles: result.participants.join("\n"),
+    }));
+    setImportedParticipants(result.participants);
+  }
+
+  function clearImport() {
+    setImportedParticipants([]);
+    setForm((current) => ({
+      ...current,
+      title: "",
+      roles: defaultForm.roles,
+    }));
   }
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
@@ -101,7 +132,11 @@ export function DashboardShell() {
       const created = await createMeeting(payload);
       router.push(`/meetings/${created.id}`);
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "미팅을 생성하지 못했습니다.");
+      setError(
+        cause instanceof Error
+          ? cause.message
+          : "미팅을 생성하지 못했습니다.",
+      );
     } finally {
       setSubmitting(false);
     }
@@ -110,15 +145,52 @@ export function DashboardShell() {
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-7xl flex-col gap-8 px-4 py-8 sm:px-6 lg:px-8 lg:py-12">
       {/* Header */}
-      <header className="flex flex-col gap-2">
-        <span className="eyebrow">Meeting Alignment AI</span>
-        <h1 className="max-w-2xl text-3xl font-bold tracking-[-0.03em] text-[var(--text-primary)] sm:text-4xl lg:text-5xl">
-          모두가 같은 페이지에 있는 회의.
-        </h1>
-        <p className="max-w-xl text-sm leading-7 text-[var(--text-secondary)] sm:text-base">
-          미팅 주제와 역할만 입력하면 역할별 브리핑, 회의 중 실시간 Q&A,
-          개인 맞춤 보조설명까지 한 흐름으로 연결됩니다.
-        </p>
+      <header className="flex items-start justify-between gap-4">
+        <div className="flex flex-col gap-2">
+          <span className="eyebrow">Meeting Alignment AI</span>
+          <h1 className="max-w-2xl text-3xl font-bold tracking-[-0.03em] text-[var(--text-primary)] sm:text-4xl lg:text-5xl">
+            모두가 같은 페이지에 있는 회의.
+          </h1>
+          <p className="max-w-xl text-sm leading-7 text-[var(--text-secondary)] sm:text-base">
+            미팅 주제와 역할만 입력하면 역할별 브리핑, 회의 중 실시간 Q&A, 개인
+            맞춤 보조설명까지 한 흐름으로 연결됩니다.
+          </p>
+        </div>
+
+        {/* User menu */}
+        <div className="shrink-0">
+          {authStatus === "authenticated" && session?.user ? (
+            <div className="flex items-center gap-3">
+              {session.user.image && (
+                <img
+                  src={session.user.image}
+                  alt=""
+                  className="h-8 w-8 rounded-full"
+                />
+              )}
+              <div className="hidden flex-col sm:flex">
+                <span className="text-xs font-medium text-[var(--text-primary)]">
+                  {session.user.name}
+                </span>
+                <button
+                  type="button"
+                  className="text-left text-[10px] text-[var(--text-tertiary)] hover:underline"
+                  onClick={() => signOut()}
+                >
+                  로그아웃
+                </button>
+              </div>
+            </div>
+          ) : authStatus === "unauthenticated" ? (
+            <button
+              type="button"
+              className="button-ghost text-xs"
+              onClick={() => signIn("google")}
+            >
+              Google 로그인
+            </button>
+          ) : null}
+        </div>
       </header>
 
       {/* Stats */}
@@ -170,7 +242,8 @@ export function DashboardShell() {
             </div>
           ) : meetings.length === 0 ? (
             <div className="empty-state">
-              아직 생성된 미팅이 없습니다.<br />
+              아직 생성된 미팅이 없습니다.
+              <br />
               우측 폼에서 첫 미팅을 만들어 보세요.
             </div>
           ) : (
@@ -193,7 +266,8 @@ export function DashboardShell() {
                         </p>
                       </div>
                       <div className="status-pill">
-                        {meeting.briefing_ready_count}/{meeting.briefing_total_count} 브리핑
+                        {meeting.briefing_ready_count}/
+                        {meeting.briefing_total_count} 브리핑
                       </div>
                     </div>
 
@@ -228,17 +302,51 @@ export function DashboardShell() {
             <span className="eyebrow">Create Meeting</span>
             <h2 className="section-title text-xl">새 미팅 생성</h2>
             <p className="text-sm leading-6 text-[var(--text-secondary)]">
-              주제, 안건, 배경자료와 역할 목록을 입력하면
-              브리핑 생성과 세션 보조의 기반 데이터가 됩니다.
+              캘린더에서 회의를 선택하거나 직접 입력해 주세요.
             </p>
           </div>
+
+          {/* Calendar import */}
+          <CalendarImport onImport={handleCalendarImport} />
+
+          {/* Imported info badge */}
+          {importedParticipants.length > 0 && (
+            <div className="flex items-center gap-2 rounded-lg bg-[var(--accent-primary)]/10 px-3 py-2">
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="var(--accent-primary)"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M20 6L9 17l-5-5" />
+              </svg>
+              <span className="text-xs text-[var(--text-secondary)]">
+                캘린더에서 불러옴 &middot; 참석자{" "}
+                {importedParticipants.length}명
+              </span>
+              <button
+                type="button"
+                className="ml-auto text-[10px] text-[var(--text-tertiary)] hover:underline"
+                onClick={clearImport}
+              >
+                초기화
+              </button>
+            </div>
+          )}
 
           <label className="field-group">
             <span className="field-label">미팅 제목</span>
             <input
               className="input-shell"
               onChange={(event) =>
-                setForm((current) => ({ ...current, title: event.target.value }))
+                setForm((current) => ({
+                  ...current,
+                  title: event.target.value,
+                }))
               }
               placeholder="예: 개인정보 마스킹 정책 정렬"
               value={form.title}
@@ -267,9 +375,14 @@ export function DashboardShell() {
               <textarea
                 className="textarea-shell"
                 onChange={(event) =>
-                  setForm((current) => ({ ...current, agenda: event.target.value }))
+                  setForm((current) => ({
+                    ...current,
+                    agenda: event.target.value,
+                  }))
                 }
-                placeholder={"한 줄에 하나씩 입력\n예: PII 마스킹 정책\n예: API 응답 필드 정리"}
+                placeholder={
+                  "한 줄에 하나씩 입력\n예: PII 마스킹 정책\n예: API 응답 필드 정리"
+                }
                 rows={5}
                 value={form.agenda}
               />
@@ -280,9 +393,14 @@ export function DashboardShell() {
               <textarea
                 className="textarea-shell"
                 onChange={(event) =>
-                  setForm((current) => ({ ...current, roles: event.target.value }))
+                  setForm((current) => ({
+                    ...current,
+                    roles: event.target.value,
+                  }))
                 }
-                placeholder={"한 줄에 하나씩 입력\n예: PO\n예: BE 개발자\n예: 법무"}
+                placeholder={
+                  "한 줄에 하나씩 입력\n예: PO\n예: BE 개발자\n예: 법무"
+                }
                 rows={5}
                 value={form.roles}
               />
