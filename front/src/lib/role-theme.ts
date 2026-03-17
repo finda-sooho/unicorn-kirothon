@@ -4,41 +4,42 @@ type RoleTheme = {
   text: string;
 };
 
+// Branding Guide §2 — 역할별 컬러 (저채도 파스텔)
 const themes: Record<string, RoleTheme> = {
   po: {
-    background: "rgba(124, 58, 237, 0.12)",
-    border: "rgba(167, 139, 250, 0.4)",
-    text: "#c4b5fd",
+    background: "#2D2640",
+    border: "rgba(184, 169, 232, 0.35)",
+    text: "#B8A9E8",
   },
   be: {
-    background: "rgba(59, 130, 246, 0.1)",
-    border: "rgba(96, 165, 250, 0.4)",
-    text: "#93c5fd",
+    background: "#1E2D3D",
+    border: "rgba(126, 184, 216, 0.35)",
+    text: "#7EB8D8",
   },
   fe: {
-    background: "rgba(20, 184, 166, 0.1)",
-    border: "rgba(45, 212, 191, 0.4)",
-    text: "#5eead4",
+    background: "#1E3332",
+    border: "rgba(109, 200, 184, 0.35)",
+    text: "#6DC8B8",
   },
   designer: {
-    background: "rgba(244, 63, 94, 0.1)",
-    border: "rgba(251, 113, 133, 0.4)",
-    text: "#fda4af",
+    background: "#3D2A2A",
+    border: "rgba(232, 168, 152, 0.35)",
+    text: "#E8A898",
   },
   legal: {
-    background: "rgba(100, 116, 139, 0.12)",
-    border: "rgba(148, 163, 184, 0.4)",
-    text: "#cbd5e1",
+    background: "#2A2D35",
+    border: "rgba(168, 176, 200, 0.35)",
+    text: "#A8B0C8",
   },
   qa: {
-    background: "rgba(34, 197, 94, 0.1)",
-    border: "rgba(74, 222, 128, 0.4)",
-    text: "#86efac",
+    background: "#2A3325",
+    border: "rgba(168, 216, 142, 0.35)",
+    text: "#A8D88E",
   },
   default: {
-    background: "rgba(96, 165, 250, 0.1)",
-    border: "rgba(96, 165, 250, 0.35)",
-    text: "#93c5fd",
+    background: "#1E2D3D",
+    border: "rgba(126, 184, 216, 0.3)",
+    text: "#7EB8D8",
   },
 };
 
